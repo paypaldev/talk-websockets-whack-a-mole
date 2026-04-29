@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 
 interface SaveGameResultInput {
@@ -37,7 +38,7 @@ function validateInput(input: SaveGameResultInput): SaveGameResultInput {
 export async function saveGameResultAction(input: SaveGameResultInput) {
   const validated = validateInput(input)
 
-  return prisma.gameResult.create({
+  const createdResult = await prisma.gameResult.create({
     data: {
       playerName: validated.playerName,
       score: validated.score,
@@ -48,4 +49,8 @@ export async function saveGameResultAction(input: SaveGameResultInput) {
       createdAt: true,
     },
   })
+
+  revalidatePath('/leaderboard')
+
+  return createdResult
 }
