@@ -1,6 +1,7 @@
 'use client'
 
 import { FormEvent, useEffect, useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { notifyStoredPlayerNameChanged, useStoredPlayerName } from './useStoredPlayerName'
 
@@ -42,6 +43,15 @@ export function LandingNameGate() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_40%),radial-gradient(circle_at_85%_15%,rgba(255,255,255,0.06),transparent_30%)]" />
 
       <section className="relative z-10 mx-auto w-full max-w-sm overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/75 p-6 shadow-[0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-sm sm:p-7">
+        <Image
+          src="/mole.png"
+          alt="Whack-a-Mole"
+          width={103}
+          height={64}
+          className="mb-4"
+          style={{ animation: 'mole-appear 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards' }}
+          priority
+        />
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">Enter your name</h1>
         <p className="mt-2 text-sm leading-relaxed text-zinc-400">
           This name will be displayed publicly on the leaderboard.

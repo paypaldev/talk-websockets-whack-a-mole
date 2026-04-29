@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 interface StartScreenProps {
   onStart: () => void
 }
@@ -5,11 +7,12 @@ interface StartScreenProps {
 export function StartScreen({ onStart }: StartScreenProps) {
   return (
     <div className="flex flex-col items-center gap-6 px-6 py-10 text-center">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/paypal-logo.svg"
-        alt="PayPal"
-        className="h-18 w-18 drop-shadow-[0_8px_24px_rgba(255,255,255,0.15)]"
+      <Image
+        src="/mole.png"
+        alt="Mole"
+        width={116}
+        height={72}
+        className="drop-shadow-[0_8px_24px_rgba(255,255,255,0.15)]"
         style={{ animation: 'mole-appear 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards' }}
       />
 
@@ -30,8 +33,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
           <span className="font-medium text-zinc-200">30s</span>
         </div>
         <div className="mt-1 flex items-center gap-2 rounded-lg border border-sky-300/30 bg-sky-400/10 px-3 py-2 text-sky-200">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/paypal-logo.svg" alt="PayPal" className="w-5 h-5 shrink-0" />
+          <Image src="/paypal-logo.svg" alt="PayPal" width={20} height={20} className="shrink-0" />
           <span>Bonus logo gives <strong>10 pts</strong> in the last 10 seconds</span>
         </div>
       </div>
