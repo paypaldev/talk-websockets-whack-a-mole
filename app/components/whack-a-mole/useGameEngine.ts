@@ -43,17 +43,16 @@ export function useGameEngine(): GameEngineReturn {
   useEffect(() => {
     if (gameState !== 'playing') return
     const interval = setInterval(() => {
-      setTimeRemaining(prev => Math.max(0, prev - 1))
+      setTimeRemaining(prev => {
+        if (prev <= 1) {
+          setGameState('ended')
+          return 0
+        }
+        return prev - 1
+      })
     }, 1000)
     return () => clearInterval(interval)
   }, [gameState])
-
-  // End game when timer reaches zero
-  useEffect(() => {
-    if (gameState === 'playing' && timeRemaining === 0) {
-      setGameState('ended')
-    }
-  }, [gameState, timeRemaining])
 
   // Mole spawner — speed is determined by actual elapsed wall-clock time
   useEffect(() => {

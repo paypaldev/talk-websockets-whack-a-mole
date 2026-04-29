@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
+import { saveGameResultAction } from '@/app/actions/saveGameResult'
 import { useGameEngine } from './useGameEngine'
 import { GameBoard } from './GameBoard'
 import { GameStats } from './GameStats'
@@ -13,6 +15,29 @@ interface WhackAMoleProps {
 export function WhackAMole({ playerName }: WhackAMoleProps) {
   const { gameState, score, misses, timeRemaining, activeMoles, startGame, whackMole } =
     useGameEngine()
+  const previousGameStateRef = useRef(gameState)
+
+  useEffect(() => {
+    const previousGameState = previousGameStateRef.current
+    previousGameStateRef.current = gameState
+
+    if (previousGameState !== 'playing' || gameState !== 'ended') {
+      return
+    }
+
+    const trimmedPlayerName = playerName?.trim()
+    if (!trimmedPlayerName) {
+      return
+    }
+
+    void saveGameResultAction({
+        playerName: trimmedPlayerName,
+        score,
+        misses,
+      }).catch(() => {
+        // Intentionally swallow to avoid blocking end-screen UX.
+      })
+  }, [gameState, misses, playerName, score])
 
   return (
     <div className="relative z-10 mx-auto w-full max-w-sm select-none overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/75 shadow-[0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-sm">
