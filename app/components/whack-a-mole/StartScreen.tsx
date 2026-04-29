@@ -4,50 +4,41 @@ interface StartScreenProps {
 
 export function StartScreen({ onStart }: StartScreenProps) {
   return (
-    <div className="flex flex-col items-center gap-6 py-12 px-6 text-center">
+    <div className="flex flex-col items-center gap-6 px-6 py-10 text-center">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/paypal-logo.svg"
         alt="PayPal"
-        className="w-20 h-20 drop-shadow-lg"
+        className="h-18 w-18 drop-shadow-[0_8px_24px_rgba(255,255,255,0.15)]"
         style={{ animation: 'mole-appear 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards' }}
       />
 
       <div>
-        <h2 className="text-2xl font-black text-[#001C64] mb-2">Tap to whack!</h2>
-        <p className="text-zinc-500 text-sm leading-relaxed max-w-50">
-          PayPal icons pop up for 30 seconds. Tap them as fast as you can!
+        <h2 className="mb-2 text-2xl font-semibold tracking-tight text-zinc-100">Tap to whack</h2>
+        <p className="max-w-56 text-sm leading-relaxed text-zinc-400">
+          Moles pop up for 30 seconds. Chase accuracy and rack up points fast.
         </p>
       </div>
 
-      <div className="flex flex-col gap-2 text-xs text-zinc-400">
-        <div className="flex items-center gap-2">
-          <span className="text-base">🐢</span>
-          <span>Starts slow… then speeds up!</span>
+      <div className="w-full space-y-2 text-left text-xs text-zinc-400">
+        <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/3 px-3 py-2">
+          <span>Speed ramp</span>
+          <span className="font-medium text-zinc-200">Slow to fast</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-base">⚡</span>
-          <span>React fast to beat your high score</span>
+        <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/3 px-3 py-2">
+          <span>Duration</span>
+          <span className="font-medium text-zinc-200">30s</span>
         </div>
-        <div
-          className="flex items-center gap-2 mt-1 px-3 py-2 rounded-xl font-semibold"
-          style={{ background: 'rgba(255,196,57,0.15)', color: '#E5A800' }}
-        >
+        <div className="mt-1 flex items-center gap-2 rounded-lg border border-sky-300/30 bg-sky-400/10 px-3 py-2 text-sky-200">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/paypal-logo.svg" alt="PayPal" className="w-5 h-5 shrink-0" />
-          <span>PayPal logo = <strong>10 pts</strong> — last 10 secs only!</span>
+          <span>Bonus logo gives <strong>10 pts</strong> in the last 10 seconds</span>
         </div>
       </div>
 
       <button
         onClick={onStart}
-        className="mt-2 px-10 py-3.5 font-black rounded-full text-lg
-                   active:scale-95 transition-all shadow-lg"
-        style={{
-          background: 'linear-gradient(180deg, #FFD140 0%, #FFC439 60%, #E5A800 100%)',
-          color: '#001C64',
-          boxShadow: '0 4px 14px rgba(255,196,57,0.45)',
-        }}
+        className="mt-2 inline-flex items-center rounded-lg border border-white/15 bg-white/3 px-8 py-3 text-base font-semibold text-zinc-100 transition-colors hover:bg-white/9 active:scale-[0.98]"
       >
         Start Game
       </button>

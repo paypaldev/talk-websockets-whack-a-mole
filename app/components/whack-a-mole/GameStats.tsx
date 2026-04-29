@@ -10,44 +10,39 @@ export function GameStats({ score, timeRemaining }: GameStatsProps) {
   const isUrgent = timeRemaining <= 10
 
   return (
-    <div className="px-4 py-3 bg-[#001C64] border-b border-[#003087]">
-      <div className="flex items-center justify-between mb-2">
-        {/* Score */}
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-widest text-[#009CDE]">
-            Score
-          </span>
-          {/* key changes on every score increment, restarting the pop animation */}
+    <div className="border-b border-white/10 px-4 py-3.5">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="rounded-lg border border-white/10 bg-white/3 px-3 py-2">
+          <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-400">Score</span>
           <span
             key={score}
-            className="text-3xl font-black text-[#FFC439] tabular-nums"
+            className="block text-2xl font-semibold tabular-nums text-zinc-100"
             style={{ animation: score > 0 ? 'score-pop 0.35s ease-out forwards' : undefined }}
           >
             {score}
           </span>
         </div>
 
-        {/* Timer */}
-        <div className="flex items-baseline gap-1.5">
+        <div className="rounded-lg border border-white/10 bg-white/3 px-3 py-2 text-right">
+          <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-400">Time</span>
           <span
-            className="text-3xl font-black tabular-nums"
-            style={{ color: isUrgent ? '#ff4d4d' : '#FFC439' }}
+            className={`block text-2xl font-semibold tabular-nums ${
+              isUrgent ? 'text-rose-300' : 'text-zinc-100'
+            }`}
           >
             {timeRemaining}
-          </span>
-          <span className="text-xs font-semibold uppercase tracking-widest text-[#009CDE]">
-            sec
           </span>
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div className="h-2 w-full bg-[#003087] rounded-full overflow-hidden">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
         <div
           className="h-full rounded-full transition-all duration-1000 ease-linear"
           style={{
             width: `${progressPercent}%`,
-            backgroundColor: isUrgent ? '#ff4d4d' : '#FFC439',
+            background: isUrgent
+              ? 'linear-gradient(90deg, #fb7185 0%, #f43f5e 100%)'
+              : 'linear-gradient(90deg, #60a5fa 0%, #22d3ee 100%)',
           }}
         />
       </div>
