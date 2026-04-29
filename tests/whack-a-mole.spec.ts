@@ -2,6 +2,12 @@ import { test, expect, type Page } from '@playwright/test'
 
 type Strategy = 'hit-all' | 'miss-all' | 'hit-half'
 
+async function enterNameAndStart(page: Page): Promise<void> {
+  await page.goto('/')
+  await page.getByLabel(/player name/i).fill('Playwright Tester')
+  await page.getByRole('button', { name: /continue to game/i }).click()
+}
+
 async function getBoardSnapshot(
   page: Page
 ): Promise<{ moleIndex: number; emptyIndex: number; moleLabel: string }> {
@@ -17,14 +23,14 @@ async function getBoardSnapshot(
 }
 
 async function playGame(page: Page, strategy: Strategy): Promise<void> {
-  await page.goto('/')
+  await enterNameAndStart(page)
   await page.getByRole('button', { name: /start game/i }).click()
 
   const holes = page.locator('.grid.grid-cols-3 button')
   let hitNext = true
   let actedOnCurrentMole = false
 
-  while (!(await page.getByText("Time's Up!").isVisible())) {
+  while (!(await page.getByText(/Time's Up!?/).isVisible())) {
     const { moleIndex, emptyIndex, moleLabel } = await getBoardSnapshot(page)
 
     if (moleIndex === -1) {
@@ -82,6 +88,13 @@ async function getStats(page: Page): Promise<{ hits: number; misses: number; acc
 test.describe('Whack-a-Mole game outcomes', () => {
   test.setTimeout(70_000)
 
+  test('direct /game visit without a stored name redirects to landing page', async ({ page }) => {
+    await page.goto('/game')
+    await page.waitForURL('**/')
+    await expect(page).toHaveURL('/')
+    await expect(page.getByLabel(/player name/i)).toBeVisible()
+  })
+
   test('hit every mole → 100% accuracy and 0 misses', async ({ page }) => {
     await playGame(page, 'hit-all')
     const { misses, accuracy } = await getStats(page)
@@ -106,9 +119,9 @@ test.describe('Whack-a-Mole game outcomes', () => {
   })
 
   test('no interaction → game finishes on its own with 0 hits and 0 misses', async ({ page }) => {
-    await page.goto('/')
+    await enterNameAndStart(page)
     await page.getByRole('button', { name: /start game/i }).click()
-    await expect(page.getByText("Time's Up!")).toBeVisible({ timeout: 40_000 })
+    await expect(page.getByText(/Time's Up!?/)).toBeVisible({ timeout: 40_000 })
     const { hits, misses } = await getStats(page)
     expect(hits).toBe(0)
     expect(misses).toBe(0)
