@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PlayersCard } from "./PlayersCard";
 
@@ -9,11 +8,29 @@ interface PlayerResult {
   misses: number;
 }
 
+interface LeaderboardRowRecord {
+  id: string;
+  playerName: string;
+  score: number;
+  misses: number;
+}
+
 interface PlayerTotals {
   name: string;
   totalScore: number;
   totalMisses: number;
   gamesPlayed: number;
+}
+
+interface PlayerTotalsRecord {
+  playerName: string;
+  _sum: {
+    misses: number | null;
+    score: number | null;
+  };
+  _count: {
+    _all: number;
+  };
 }
 
 function ratio(hits: number, misses: number): string {
@@ -32,7 +49,7 @@ async function getLeaderboardRows(): Promise<PlayerResult[]> {
     },
   });
 
-  return results.map((result) => ({
+  return results.map((result: LeaderboardRowRecord) => ({
     id: result.id,
     name: result.playerName,
     hits: result.score,
@@ -52,7 +69,7 @@ async function getPlayerTotals(): Promise<PlayerTotals[]> {
     },
   });
 
-  return groupedResults.map((result) => ({
+  return groupedResults.map((result: PlayerTotalsRecord) => ({
     name: result.playerName,
     totalScore: result._sum.score ?? 0,
     totalMisses: result._sum.misses ?? 0,
