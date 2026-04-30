@@ -16,6 +16,13 @@ npm install
 cp .env.example .env
 ```
 
+    Ensure these public variables are set for Supabase realtime:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+```
+
 3. Start local Supabase (Docker required):
 
 ```bash

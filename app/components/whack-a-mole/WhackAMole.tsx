@@ -7,6 +7,7 @@ import { GameBoard } from './GameBoard'
 import { GameStats } from './GameStats'
 import { StartScreen } from './StartScreen'
 import { EndScreen } from './EndScreen'
+import { ACTIVE_GAMES_CHANNEL, getSupabaseBrowserClient } from '@/lib/supabaseBrowser'
 
 interface WhackAMoleProps {
   playerName?: string
@@ -16,6 +17,7 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
   const { gameState, score, misses, timeRemaining, activeMoles, startGame, whackMole } =
     useGameEngine()
   const previousGameStateRef = useRef(gameState)
+  const realtimeSessionIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     const previousGameState = previousGameStateRef.current
@@ -38,6 +40,45 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
         // Intentionally swallow to avoid blocking end-screen UX.
       })
   }, [gameState, misses, playerName, score])
+
+  useEffect(() => {
+    if (gameState !== 'playing') {
+      return
+    }
+
+    const supabase = getSupabaseBrowserClient()
+    if (!supabase) {
+      return
+    }
+
+    if (!realtimeSessionIdRef.current) {
+      realtimeSessionIdRef.current = crypto.randomUUID()
+    }
+
+    const channel = supabase.channel(ACTIVE_GAMES_CHANNEL, {
+      config: {
+        presence: {
+          key: realtimeSessionIdRef.current,
+        },
+      },
+    })
+
+    channel.subscribe((status) => {
+      if (status !== 'SUBSCRIBED') {
+        return
+      }
+
+      void channel.track({
+        playerName: playerName?.trim() || 'Anonymous',
+        startedAt: new Date().toISOString(),
+      })
+    })
+
+    return () => {
+      void channel.untrack()
+      void channel.unsubscribe()
+    }
+  }, [gameState, playerName])
 
   return (
     <div className="relative z-10 mx-auto w-full max-w-sm select-none overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/75 shadow-[0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-sm">

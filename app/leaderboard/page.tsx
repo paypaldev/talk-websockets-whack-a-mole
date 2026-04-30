@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { PlayersCard } from "./PlayersCard";
 
 interface PlayerResult {
   id: string;
@@ -270,10 +271,7 @@ export default async function LeaderboardPage() {
         </header>
 
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Players</p>
-            <p className="mt-1 text-2xl font-semibold text-zinc-50">{uniquePlayers}</p>
-          </div>
+          <PlayersCard uniquePlayers={uniquePlayers} />
           <div className="rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3">
             <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Most Hits</p>
             <p className="mt-1 text-xl font-semibold text-zinc-50">
@@ -326,15 +324,6 @@ export default async function LeaderboardPage() {
             subtitle="Games played and cumulative score"
             rows={byTotalGames}
           />
-        </div>
-
-        <div>
-          <Link
-            href="/"
-            className="inline-flex items-center rounded-lg border border-white/15 bg-white/3 px-5 py-2.5 text-sm font-medium text-zinc-100 transition-colors hover:bg-white/9"
-          >
-            Play Again
-          </Link>
         </div>
       </div>
     </main>
