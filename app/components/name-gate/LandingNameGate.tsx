@@ -1,13 +1,16 @@
 'use client'
 
-import { FormEvent, useEffect, useState } from 'react'
+import { SyntheticEvent, useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { validatePlayerNameAction } from '@/app/actions/validatePlayerName'
 import { notifyStoredPlayerNameChanged, useStoredPlayerName } from './useStoredPlayerName'
 
 export function LandingNameGate() {
   const router = useRouter()
   const [name, setName] = useState('')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const storedPlayerName = useStoredPlayerName()
   const hasStoredName = Boolean(storedPlayerName)
 
@@ -17,7 +20,7 @@ export function LandingNameGate() {
     }
   }, [hasStoredName, router])
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const trimmedName = name.trim()
@@ -25,9 +28,25 @@ export function LandingNameGate() {
       return
     }
 
-    window.localStorage.setItem('whack-a-mole-player-name', trimmedName)
-    notifyStoredPlayerNameChanged()
-    router.push('/game')
+    setErrorMessage(null)
+    setIsSubmitting(true)
+
+    try {
+      const validationResult = await validatePlayerNameAction(trimmedName)
+
+      if (!validationResult.isUnique) {
+        setErrorMessage(validationResult.errorMessage ?? 'That name is unavailable. Try another one.')
+        return
+      }
+
+      window.localStorage.setItem('whack-a-mole-player-name', trimmedName)
+      notifyStoredPlayerNameChanged()
+      router.push('/game')
+    } catch {
+      setErrorMessage('Unable to verify that name right now. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (hasStoredName) {
@@ -66,7 +85,12 @@ export function LandingNameGate() {
             name="player-name"
             type="text"
             value={name}
-            onChange={event => setName(event.target.value)}
+            onChange={event => {
+              setName(event.target.value)
+              if (errorMessage) {
+                setErrorMessage(null)
+              }
+            }}
             className="w-full rounded-lg border border-white/15 bg-white/3 px-3.5 py-3 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-sky-300/70"
             placeholder="e.g. Alex"
             maxLength={40}
@@ -74,12 +98,18 @@ export function LandingNameGate() {
             required
           />
 
+          {errorMessage ? (
+            <p className="text-sm text-rose-300" role="alert" aria-live="polite">
+              {errorMessage}
+            </p>
+          ) : null}
+
           <button
             type="submit"
             className="inline-flex w-full items-center justify-center rounded-lg border border-white/15 bg-white/3 px-5 py-3 text-sm font-semibold text-zinc-100 transition-colors hover:bg-white/9 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!name.trim()}
+            disabled={!name.trim() || isSubmitting}
           >
-            Continue to Game
+            {isSubmitting ? 'Checking name...' : 'Continue to Game'}
           </button>
         </form>
       </section>
