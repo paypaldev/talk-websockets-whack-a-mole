@@ -262,6 +262,7 @@ export default async function LeaderboardPage() {
   });
 
   const uniquePlayers = playerTotals.length;
+  const totalGamesPlayed = rows.length;
   const mostHitsPlayer = [...playerTotals].sort((a, b) => b.totalScore - a.totalScore)[0];
   const mostMissesPlayer = [...playerTotals].sort((a, b) => b.totalMisses - a.totalMisses)[0];
 
@@ -288,7 +289,10 @@ export default async function LeaderboardPage() {
         </header>
 
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <PlayersCard uniquePlayers={uniquePlayers} />
+          <PlayersCard
+            uniquePlayers={uniquePlayers}
+            totalGamesPlayed={totalGamesPlayed}
+          />
           <div className="rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3">
             <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Most Hits</p>
             <p className="mt-1 text-xl font-semibold text-zinc-50">
