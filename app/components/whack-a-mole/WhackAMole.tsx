@@ -64,14 +64,12 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
     })
 
     channel.subscribe((status) => {
-      if (status !== 'SUBSCRIBED') {
-        return
+      if (status === 'SUBSCRIBED') {
+        void channel.track({
+          playerName: playerName?.trim() || 'Anonymous',
+          startedAt: new Date().toISOString(),
+        })
       }
-
-      void channel.track({
-        playerName: playerName?.trim() || 'Anonymous',
-        startedAt: new Date().toISOString(),
-      })
     })
 
     return () => {
