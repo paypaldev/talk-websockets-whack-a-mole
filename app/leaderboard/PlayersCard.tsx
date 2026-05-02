@@ -23,6 +23,8 @@ export function PlayersCard({ uniquePlayers, totalGamesPlayed }: PlayersCardProp
       return
     }
 
+    let isMounted = true
+
     const activeGamesChannel = supabase.channel(ACTIVE_GAMES_CHANNEL)
     const gamesCountChannel = supabase.channel(GAME_RESULTS_CHANNEL)
 
@@ -32,6 +34,18 @@ export function PlayersCard({ uniquePlayers, totalGamesPlayed }: PlayersCardProp
         return total + sessions.length
       }, 0)
       setActiveGames(gameCount)
+    }
+
+    const syncTotalGamesPlayed = async () => {
+      const { count, error } = await supabase
+        .from('game_results')
+        .select('id', { count: 'exact', head: true })
+
+      if (error || !isMounted || typeof count !== 'number') {
+        return
+      }
+
+      setTotalGamesPlayedCount(count)
     }
 
     activeGamesChannel
@@ -45,13 +59,19 @@ export function PlayersCard({ uniquePlayers, totalGamesPlayed }: PlayersCardProp
         }
       })
 
+    const statusesToResync = ['SUBSCRIBED', 'TIMED_OUT', 'CHANNEL_ERROR', 'CLOSED'] as const
     gamesCountChannel
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'game_results' }, () => {
         setTotalGamesPlayedCount((currentCount) => currentCount + 1)
       })
-      .subscribe()
+      .subscribe((status) => {
+        if (statusesToResync.includes(status)) {
+          void syncTotalGamesPlayed()
+        }
+      })
 
     return () => {
+      isMounted = false
       setRealtimeReady(false)
       void activeGamesChannel.unsubscribe()
       void gamesCountChannel.unsubscribe()
