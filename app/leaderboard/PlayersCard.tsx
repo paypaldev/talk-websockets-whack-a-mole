@@ -6,16 +6,25 @@ import {
   GAME_RESULTS_CHANNEL,
   getSupabaseBrowserClient,
 } from '@/lib/supabaseBrowser'
+import { RealtimeBadge, type RealtimeStatus } from './RealtimeBadge'
 
 interface PlayersCardProps {
   uniquePlayers: number
   totalGamesPlayed: number
+  realtimeStatus: RealtimeStatus
 }
 
-export function PlayersCard({ uniquePlayers, totalGamesPlayed }: PlayersCardProps) {
+export function PlayersCard({
+  uniquePlayers,
+  totalGamesPlayed,
+  realtimeStatus,
+}: PlayersCardProps) {
   const [activeGames, setActiveGames] = useState(0)
   const [totalGamesPlayedCount, setTotalGamesPlayedCount] = useState(totalGamesPlayed)
-  const [realtimeReady, setRealtimeReady] = useState(false)
+
+  useEffect(() => {
+    setTotalGamesPlayedCount(totalGamesPlayed)
+  }, [totalGamesPlayed])
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient()
@@ -54,7 +63,6 @@ export function PlayersCard({ uniquePlayers, totalGamesPlayed }: PlayersCardProp
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          setRealtimeReady(true)
           syncActiveGames()
         }
       })
@@ -72,7 +80,6 @@ export function PlayersCard({ uniquePlayers, totalGamesPlayed }: PlayersCardProp
 
     return () => {
       isMounted = false
-      setRealtimeReady(false)
       void activeGamesChannel.unsubscribe()
       void gamesCountChannel.unsubscribe()
     }
@@ -80,7 +87,10 @@ export function PlayersCard({ uniquePlayers, totalGamesPlayed }: PlayersCardProp
 
   return (
     <div className="rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3">
-      <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Players</p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Players</p>
+        <RealtimeBadge status={realtimeStatus} />
+      </div>
       <p className="mt-1 text-2xl font-semibold text-zinc-50">{uniquePlayers}</p>
       <div className="mt-1 flex items-center justify-between gap-4 text-xs text-zinc-400">
         <p>
@@ -90,7 +100,6 @@ export function PlayersCard({ uniquePlayers, totalGamesPlayed }: PlayersCardProp
         <p className="text-right">
           Games in progress:{' '}
           <span className="font-semibold text-zinc-200 tabular-nums">{activeGames}</span>
-          {!realtimeReady && <span className="ml-2 text-zinc-500">(realtime offline)</span>}
         </p>
       </div>
     </div>

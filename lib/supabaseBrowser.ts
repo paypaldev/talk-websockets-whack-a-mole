@@ -4,6 +4,7 @@ let cachedClient: SupabaseClient | null | undefined
 
 export const ACTIVE_GAMES_CHANNEL = 'leaderboard:games:active'
 export const GAME_RESULTS_CHANNEL = 'leaderboard:games:results'
+export const GAME_RESULTS_LEADERBOARD_CHANNEL = 'leaderboard:games:results:leaderboard'
 
 export function getSupabaseBrowserClient(): SupabaseClient | null {
   if (cachedClient !== undefined) {
