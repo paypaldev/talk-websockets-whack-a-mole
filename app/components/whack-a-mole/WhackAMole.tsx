@@ -1,13 +1,31 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { saveGameResultAction } from '@/app/actions/saveGameResult'
 import { useGameEngine } from './useGameEngine'
 import { GameBoard } from './GameBoard'
 import { GameStats } from './GameStats'
 import { StartScreen } from './StartScreen'
 import { EndScreen } from './EndScreen'
-import { ACTIVE_GAMES_CHANNEL, getSupabaseBrowserClient } from '@/lib/supabaseBrowser'
+import {
+  ACTIVE_GAMES_CHANNEL,
+  LEADERBOARD_SWAG_CHANNEL,
+  SWAG_STORE_ENABLED_EVENT,
+  getSupabaseBrowserClient,
+} from '@/lib/supabaseBrowser'
+
+interface SwagStoreBroadcastPayload {
+  showSwagStore: boolean
+}
+
+function isSwagStoreBroadcastPayload(value: unknown): value is SwagStoreBroadcastPayload {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const candidate = value as Record<string, unknown>
+  return typeof candidate.showSwagStore === 'boolean'
+}
 
 interface WhackAMoleProps {
   playerName?: string
@@ -16,6 +34,7 @@ interface WhackAMoleProps {
 export function WhackAMole({ playerName }: WhackAMoleProps) {
   const { gameState, score, misses, timeRemaining, activeMoles, startGame, whackMole } =
     useGameEngine()
+  const [showSwagStoreButton, setShowSwagStoreButton] = useState(false)
   const previousGameStateRef = useRef(gameState)
   const realtimeSessionIdRef = useRef<string | null>(null)
 
@@ -40,6 +59,31 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
         // Intentionally swallow to avoid blocking end-screen UX.
       })
   }, [gameState, misses, playerName, score])
+
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient()
+    if (!supabase) {
+      return
+    }
+
+    const swagChannel = supabase.channel(LEADERBOARD_SWAG_CHANNEL)
+
+    swagChannel
+      .on('broadcast', { event: SWAG_STORE_ENABLED_EVENT }, ({ payload }) => {
+        if (!isSwagStoreBroadcastPayload(payload)) {
+          return
+        }
+
+        if (payload.showSwagStore) {
+          setShowSwagStoreButton(true)
+        }
+      })
+      .subscribe()
+
+    return () => {
+      void swagChannel.unsubscribe()
+    }
+  }, [])
 
   useEffect(() => {
     if (gameState !== 'playing') {
@@ -91,12 +135,16 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
             )}
           </div>
         </div>
-        <span className="rounded-full border border-white/10 bg-white/3 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-400">
-          Arcade
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full border border-white/10 bg-white/3 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-400">
+            Arcade
+          </span>
+        </div>
       </div>
 
-      {gameState === 'idle' && <StartScreen onStart={startGame} />}
+      {gameState === 'idle' && (
+        <StartScreen onStart={startGame} showSwagStoreButton={showSwagStoreButton} />
+      )}
 
       {gameState === 'playing' && (
         <>

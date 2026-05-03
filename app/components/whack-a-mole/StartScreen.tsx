@@ -1,10 +1,12 @@
 import Image from 'next/image'
+import Link from 'next/link'
 
 interface StartScreenProps {
   onStart: () => void
+  showSwagStoreButton?: boolean
 }
 
-export function StartScreen({ onStart }: StartScreenProps) {
+export function StartScreen({ onStart, showSwagStoreButton = false }: StartScreenProps) {
   return (
     <div className="flex flex-col items-center gap-6 px-6 py-10 text-center">
       <Image
@@ -38,12 +40,21 @@ export function StartScreen({ onStart }: StartScreenProps) {
         </div>
       </div>
 
-      <button
-        onClick={onStart}
-        className="mt-2 inline-flex items-center rounded-lg border border-white/15 bg-white/3 px-8 py-3 text-base font-semibold text-zinc-100 transition-colors hover:bg-white/9 active:scale-[0.98]"
-      >
-        Start Game
-      </button>
+      {showSwagStoreButton ? (
+        <Link
+          href="/swag-store"
+          className="mt-2 inline-flex items-center rounded-lg border border-emerald-300/40 bg-emerald-400/10 px-8 py-3 text-base font-semibold text-emerald-200 transition-colors hover:bg-emerald-400/20"
+        >
+          Swag Store
+        </Link>
+      ) : (
+        <button
+          onClick={onStart}
+          className="mt-2 inline-flex items-center rounded-lg border border-white/15 bg-white/3 px-8 py-3 text-base font-semibold text-zinc-100 transition-colors hover:bg-white/9 active:scale-[0.98]"
+        >
+          Start Game
+        </button>
+      )}
     </div>
   )
 }

@@ -1,13 +1,20 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { type RealtimeChannel } from '@supabase/supabase-js'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   GAME_RESULTS_LEADERBOARD_CHANNEL,
+  LEADERBOARD_SWAG_CHANNEL,
+  SWAG_STORE_ENABLED_EVENT,
   getSupabaseBrowserClient,
 } from '@/lib/supabaseBrowser'
 import { PlayersCard } from './PlayersCard'
 import { RealtimeBadge, type RealtimeStatus } from './RealtimeBadge'
+
+interface SwagStoreBroadcastPayload {
+  showSwagStore: boolean
+}
 
 export interface PlayerResult {
   id: string
@@ -253,6 +260,35 @@ function TotalsTable({
 export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
   const [rows, setRows] = useState<PlayerResult[]>(initialRows)
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>('connecting')
+  const [hasSwagBeenClicked, setHasSwagBeenClicked] = useState(false)
+  const [swagChannelReady, setSwagChannelReady] = useState(false)
+  const swagChannelRef = useRef<RealtimeChannel | null>(null)
+  const swagAnimationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleSwagClick = async () => {
+    setHasSwagBeenClicked(true)
+
+    if (swagAnimationTimeoutRef.current) {
+      clearTimeout(swagAnimationTimeoutRef.current)
+    }
+
+    swagAnimationTimeoutRef.current = setTimeout(() => {
+      setHasSwagBeenClicked(false)
+      swagAnimationTimeoutRef.current = null
+    }, 5000)
+
+    if (!swagChannelReady || !swagChannelRef.current) {
+      return
+    }
+
+    await swagChannelRef.current.send({
+      type: 'broadcast',
+      event: SWAG_STORE_ENABLED_EVENT,
+      payload: {
+        showSwagStore: true,
+      } satisfies SwagStoreBroadcastPayload,
+    })
+  }
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient()
@@ -263,6 +299,7 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
     let isMounted = true
 
     const resultsChannel = supabase.channel(GAME_RESULTS_LEADERBOARD_CHANNEL)
+    const swagChannel = (swagChannelRef.current = supabase.channel(LEADERBOARD_SWAG_CHANNEL))
 
     const syncRows = async () => {
       const { data, error } = await supabase
@@ -310,10 +347,20 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
         }
       })
 
+    swagChannel.subscribe((status) => {
+        setSwagChannelReady(status === 'SUBSCRIBED')
+      })
+
     return () => {
       isMounted = false
       setRealtimeStatus('offline')
+      setSwagChannelReady(false)
+      if (swagAnimationTimeoutRef.current) {
+        clearTimeout(swagAnimationTimeoutRef.current)
+      }
+      swagChannelRef.current = null
       void resultsChannel.unsubscribe()
+      void swagChannel.unsubscribe()
     }
   }, [])
 
@@ -359,12 +406,28 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
               Live Rankings
             </span>
 
-            <Link
-              href="/qrcode"
-              className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-200 transition-colors hover:bg-white/10"
-            >
-              QR Code
-            </Link>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  void handleSwagClick()
+                }}
+                className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] transition-colors ${
+                  hasSwagBeenClicked
+                    ? 'animate-pulse border-emerald-300/45 bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/25'
+                    : 'border-white/15 bg-white/5 text-zinc-200 hover:bg-white/10'
+                }`}
+              >
+                Swag
+              </button>
+
+              <Link
+                href="/qrcode"
+                className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-200 transition-colors hover:bg-white/10"
+              >
+                QR Code
+              </Link>
+            </div>
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
