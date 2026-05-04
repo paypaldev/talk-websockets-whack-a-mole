@@ -1,4 +1,36 @@
 import Link from 'next/link'
+import Image from 'next/image'
+
+interface SwagItem {
+  id: string
+  title: string
+  description: string
+  imageSrc: string
+}
+
+const swagItems: SwagItem[] = [
+  {
+    id: 'paypal-swag-notebook',
+    title: 'PayPal Notebook',
+    description:
+      'A sleek, pocket-sized notebook with a pixel art cover featuring PayPal’s iconic blue and green colors.',
+    imageSrc: '/paypal-swag1.png',
+  },
+  {
+    id: 'paypal-swag-hoodie',
+    title: 'PayPal Hoodie',
+    description:
+      'A comfortable hoodie featuring PayPal&quot;s branding and colors, perfect for casual wear.',
+    imageSrc: '/paypal-swag2.png',
+  },
+  {
+    id: 'paypal-swag-cap',
+    title: 'PayPal Cap',
+    description:
+      'A stylish cap with PayPal&quot;s logo embroidered on the front, available in various colors.',
+    imageSrc: '/paypal-swag3.png',
+  },
+]
 
 export default function SwagStorePage() {
   return (
@@ -30,8 +62,30 @@ export default function SwagStorePage() {
           </div>
         </header>
 
-        <section className="w-full rounded-2xl border border-white/10 bg-zinc-950/70 p-6 backdrop-blur-sm">
-          <p className="text-sm text-zinc-300">Coming soon.</p>
+        <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {swagItems.map((item) => (
+            <article
+              key={item.id}
+              className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-sm"
+            >
+              <div className="relative aspect-4/3 w-full border-b border-white/10">
+                <Image
+                  src={item.imageSrc}
+                  alt={item.title}
+                  fill
+                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                  className="object-cover"
+                />
+              </div>
+
+              <div className="space-y-3 p-5">
+                <div className="space-y-1">
+                  <h2 className="text-lg font-semibold tracking-tight text-zinc-100">{item.title}</h2>
+                  <p className="text-sm leading-relaxed text-zinc-400">{item.description}</p>
+                </div>
+              </div>
+            </article>
+          ))}
         </section>
       </div>
     </main>
