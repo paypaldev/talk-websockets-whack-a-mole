@@ -17,12 +17,15 @@
     "test:headed": "playwright test --headed"
   },
   "dependencies": {
+    "@paypal/paypal-server-sdk": "^2.3.0",
+    "@paypal/react-paypal-js": "^9.2.0",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@supabase/supabase-js": "^2.105.1",
     "next": "16.2.2",
     "pg": "^8.16.3",
     "react": "19.2.4",
+    "react-canvas-confetti": "^2.0.7",
     "react-dom": "19.2.4"
   },
   "devDependencies": {

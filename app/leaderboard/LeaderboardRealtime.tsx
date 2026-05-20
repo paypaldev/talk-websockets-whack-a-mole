@@ -6,15 +6,16 @@ import Link from 'next/link'
 import {
   GAME_RESULTS_LEADERBOARD_CHANNEL,
   LEADERBOARD_SWAG_CHANNEL,
+  type SwagCelebrationBroadcastPayload,
+  type SwagCheckoutBroadcastPayload,
+  type SwagStoreBroadcastPayload,
+  SWAG_STORE_CELEBRATION_EVENT,
+  SWAG_STORE_CHECKOUT_ENABLED_EVENT,
   SWAG_STORE_ENABLED_EVENT,
   getSupabaseBrowserClient,
 } from '@/lib/supabaseBrowser'
 import { PlayersCard } from './PlayersCard'
 import { RealtimeBadge, type RealtimeStatus } from './RealtimeBadge'
-
-interface SwagStoreBroadcastPayload {
-  showSwagStore: boolean
-}
 
 export interface PlayerResult {
   id: string
@@ -261,9 +262,12 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
   const [rows, setRows] = useState<PlayerResult[]>(initialRows)
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>('connecting')
   const [hasSwagBeenClicked, setHasSwagBeenClicked] = useState(false)
+  const [hasCelebrationBeenClicked, setHasCelebrationBeenClicked] = useState(false)
+  const [isSwagCheckoutEnabled, setIsSwagCheckoutEnabled] = useState(true)
   const [swagChannelReady, setSwagChannelReady] = useState(false)
   const swagChannelRef = useRef<RealtimeChannel | null>(null)
   const swagAnimationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const celebrationAnimationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleSwagClick = async () => {
     setHasSwagBeenClicked(true)
@@ -287,6 +291,48 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
       payload: {
         showSwagStore: true,
       } satisfies SwagStoreBroadcastPayload,
+    })
+  }
+
+  const handleSwagCheckoutToggle = async () => {
+    const nextEnabled = !isSwagCheckoutEnabled
+    setIsSwagCheckoutEnabled(nextEnabled)
+
+    if (!swagChannelReady || !swagChannelRef.current) {
+      return
+    }
+
+    await swagChannelRef.current.send({
+      type: 'broadcast',
+      event: SWAG_STORE_CHECKOUT_ENABLED_EVENT,
+      payload: {
+        enabled: nextEnabled,
+      } satisfies SwagCheckoutBroadcastPayload,
+    })
+  }
+
+  const handleSwagCelebrationClick = async () => {
+    setHasCelebrationBeenClicked(true)
+
+    if (celebrationAnimationTimeoutRef.current) {
+      clearTimeout(celebrationAnimationTimeoutRef.current)
+    }
+
+    celebrationAnimationTimeoutRef.current = setTimeout(() => {
+      setHasCelebrationBeenClicked(false)
+      celebrationAnimationTimeoutRef.current = null
+    }, 3000)
+
+    if (!swagChannelReady || !swagChannelRef.current) {
+      return
+    }
+
+    await swagChannelRef.current.send({
+      type: 'broadcast',
+      event: SWAG_STORE_CELEBRATION_EVENT,
+      payload: {
+        launchedAt: Date.now(),
+      } satisfies SwagCelebrationBroadcastPayload,
     })
   }
 
@@ -358,6 +404,9 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
       if (swagAnimationTimeoutRef.current) {
         clearTimeout(swagAnimationTimeoutRef.current)
       }
+      if (celebrationAnimationTimeoutRef.current) {
+        clearTimeout(celebrationAnimationTimeoutRef.current)
+      }
       swagChannelRef.current = null
       void resultsChannel.unsubscribe()
       void swagChannel.unsubscribe()
@@ -419,6 +468,34 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
                 }`}
               >
                 Swag
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  void handleSwagCelebrationClick()
+                }}
+                className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] transition-colors ${
+                  hasCelebrationBeenClicked
+                    ? 'animate-pulse border-sky-300/45 bg-sky-400/15 text-sky-200 hover:bg-sky-400/25'
+                    : 'border-white/15 bg-white/5 text-zinc-200 hover:bg-white/10'
+                }`}
+              >
+                Celebrate
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  void handleSwagCheckoutToggle()
+                }}
+                className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] transition-colors ${
+                  isSwagCheckoutEnabled
+                    ? 'border-emerald-300/45 bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/25'
+                    : 'border-rose-300/45 bg-rose-400/10 text-rose-200 hover:bg-rose-400/20'
+                }`}
+              >
+                {isSwagCheckoutEnabled ? 'Enabled' : 'Disabled'}
               </button>
 
               <Link

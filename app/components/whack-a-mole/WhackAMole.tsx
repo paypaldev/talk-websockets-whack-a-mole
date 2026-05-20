@@ -11,21 +11,9 @@ import {
   ACTIVE_GAMES_CHANNEL,
   LEADERBOARD_SWAG_CHANNEL,
   SWAG_STORE_ENABLED_EVENT,
+  isSwagStoreBroadcastPayload,
   getSupabaseBrowserClient,
 } from '@/lib/supabaseBrowser'
-
-interface SwagStoreBroadcastPayload {
-  showSwagStore: boolean
-}
-
-function isSwagStoreBroadcastPayload(value: unknown): value is SwagStoreBroadcastPayload {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-
-  const candidate = value as Record<string, unknown>
-  return typeof candidate.showSwagStore === 'boolean'
-}
 
 interface WhackAMoleProps {
   playerName?: string
@@ -153,7 +141,14 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
         </>
       )}
 
-      {gameState === 'ended' && <EndScreen score={score} misses={misses} onRestart={startGame} />}
+      {gameState === 'ended' && (
+        <EndScreen
+          score={score}
+          misses={misses}
+          onRestart={startGame}
+          showSwagStoreButton={showSwagStoreButton}
+        />
+      )}
     </div>
   )
 }

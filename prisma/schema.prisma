@@ -16,3 +16,17 @@ model GameResult {
     @@index([createdAt])
     @@map("game_results")
 }
+
+model SwagOrder {
+    id            String   @id @default(cuid())
+    itemId        String   @db.VarChar(120)
+    playerName    String   @db.VarChar(80)
+    paypalOrderId String?  @unique @db.VarChar(191)
+    amountCents   Int
+    currency      String   @db.VarChar(3)
+    status        String   @default("pending") @db.VarChar(20)
+    createdAt     DateTime @default(now())
+
+    @@index([createdAt])
+    @@map("swag_orders")
+}

@@ -1,7 +1,10 @@
+import Link from 'next/link'
+
 interface EndScreenProps {
   score: number
   misses: number
   onRestart: () => void
+  showSwagStoreButton?: boolean
 }
 
 function getRating(score: number): { emoji: string; label: string } {
@@ -12,7 +15,7 @@ function getRating(score: number): { emoji: string; label: string } {
   return { emoji: '🐌', label: 'Keep trying!' }
 }
 
-export function EndScreen({ score, misses, onRestart }: EndScreenProps) {
+export function EndScreen({ score, misses, onRestart, showSwagStoreButton = false }: EndScreenProps) {
   const { emoji, label } = getRating(score)
   const total = score + misses
   const accuracy = total === 0 ? 0 : Math.round((score / total) * 100)
@@ -59,12 +62,21 @@ export function EndScreen({ score, misses, onRestart }: EndScreenProps) {
         </div>
       </div>
 
-      <button
-        onClick={onRestart}
-        className="inline-flex items-center rounded-lg border border-white/15 bg-white/3 px-8 py-3 text-base font-semibold text-zinc-100 transition-colors hover:bg-white/9 active:scale-[0.98]"
-      >
-        Play Again
-      </button>
+      {showSwagStoreButton ? (
+        <Link
+          href="/swag-store"
+          className="inline-flex items-center rounded-lg border border-emerald-300/40 bg-emerald-400/10 px-8 py-3 text-base font-semibold text-emerald-200 transition-colors hover:bg-emerald-400/20"
+        >
+          Swag Store
+        </Link>
+      ) : (
+        <button
+          onClick={onRestart}
+          className="inline-flex items-center rounded-lg border border-white/15 bg-white/3 px-8 py-3 text-base font-semibold text-zinc-100 transition-colors hover:bg-white/9 active:scale-[0.98]"
+        >
+          Play Again
+        </button>
+      )}
     </div>
   )
 }

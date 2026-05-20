@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+import { validatePlayerName } from '@/lib/playerName'
 
 interface SaveGameResultInput {
   playerName: string
@@ -10,15 +11,7 @@ interface SaveGameResultInput {
 }
 
 function validateInput(input: SaveGameResultInput): SaveGameResultInput {
-  const playerName = input.playerName.trim()
-
-  if (playerName.length === 0) {
-    throw new Error('playerName is required.')
-  }
-
-  if (playerName.length > 80) {
-    throw new Error('playerName must be 80 characters or fewer.')
-  }
+  const playerName = validatePlayerName(input.playerName)
 
   if (!Number.isInteger(input.score) || input.score < 0) {
     throw new Error('score must be a non-negative integer.')
