@@ -2,6 +2,7 @@
 
 - Follow the coding style and conventions already present in the codebase.
 - Always run lint and build after making changes.
+- Keep the code clean and DRY (Don't Repeat Yourself).
 
 ## TypeScript Strictness
 

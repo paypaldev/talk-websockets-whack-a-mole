@@ -2,12 +2,16 @@
 
 import { type RealtimeChannel } from '@supabase/supabase-js'
 import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
 import Image from 'next/image'
 import { RequirePlayerName } from '@/app/components/name-gate/RequirePlayerName'
 import { createPayPalOrderAction, markSwagOrderPaidAction } from '@/app/actions/createSwagOrder'
 import { PayPalProvider, PayPalOneTimePaymentButton } from '@paypal/react-paypal-js/sdk-v6'
 import ReactCanvasConfetti from 'react-canvas-confetti'
+import {
+  assignConfettiLauncher,
+  fireCelebrationConfetti,
+  type ConfettiLauncher,
+} from '@/lib/confetti'
 import { swagCatalog } from '@/lib/swagCatalog'
 import {
   LEADERBOARD_SWAG_CHANNEL,
@@ -24,22 +28,6 @@ const swagItems = swagCatalog
 interface SwagStoreContentProps {
   playerName: string
 }
-
-interface ConfettiOptions {
-  startVelocity: number
-  ticks: number
-  gravity: number
-  scalar: number
-  zIndex: number
-  particleCount: number
-  spread: number
-  origin: {
-    x: number
-    y: number
-  }
-}
-
-type ConfettiLauncher = (options: ConfettiOptions) => Promise<null> | null
 
 function formatSwagPrice(amountCents: number, currency: string): string {
   return new Intl.NumberFormat('en-US', {
@@ -59,48 +47,6 @@ function SwagStoreContent({ playerName }: SwagStoreContentProps) {
   const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const swagChannelRef = useRef<RealtimeChannel | null>(null)
   const confettiRef = useRef<ConfettiLauncher | null>(null)
-
-  function setConfettiInstance({ confetti }: { confetti: unknown }): void {
-    if (typeof confetti === 'function') {
-      confettiRef.current = confetti as ConfettiLauncher
-    }
-  }
-
-  function shootConfetti(): void {
-    const confetti = confettiRef.current
-
-    if (!confetti) {
-      return
-    }
-
-    const baseConfig = {
-      startVelocity: 40,
-      ticks: 220,
-      gravity: 0.8,
-      scalar: 1,
-      zIndex: 150,
-    }
-
-    confetti({
-      ...baseConfig,
-      particleCount: 160,
-      spread: 135,
-      origin: { x: 0.5, y: 0.56 },
-    })
-    confetti({
-      ...baseConfig,
-      particleCount: 120,
-      startVelocity: 50,
-      spread: 95,
-      origin: { x: 0.5, y: 0.38 },
-    })
-    confetti({
-      ...baseConfig,
-      particleCount: 120,
-      spread: 180,
-      origin: { x: 0.5, y: 0.72 },
-    })
-  }
 
   useEffect(() => {
     return () => {
@@ -131,7 +77,7 @@ function SwagStoreContent({ playerName }: SwagStoreContentProps) {
           return
         }
 
-        shootConfetti()
+        fireCelebrationConfetti(confettiRef.current)
       })
       .subscribe()
 
@@ -166,7 +112,7 @@ function SwagStoreContent({ playerName }: SwagStoreContentProps) {
       setOrderStatusMessage('Payment complete!')
       setRecentlyOrderedItemTitle(purchasedItem?.title ?? null)
       setHighlightedItemId(itemId)
-      shootConfetti()
+      fireCelebrationConfetti(confettiRef.current)
 
       if (highlightTimeoutRef.current) {
         clearTimeout(highlightTimeoutRef.current)
@@ -192,7 +138,9 @@ function SwagStoreContent({ playerName }: SwagStoreContentProps) {
           className="pointer-events-none fixed inset-0 z-40"
           style={{ width: '100vw', height: '100vh' }}
           globalOptions={{ resize: true, useWorker: true }}
-          onInit={setConfettiInstance}
+          onInit={({ confetti }) => {
+            assignConfettiLauncher(confettiRef, confetti)
+          }}
         />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.2),transparent_40%),radial-gradient(circle_at_85%_15%,rgba(255,255,255,0.06),transparent_30%)]" />
 
@@ -203,12 +151,12 @@ function SwagStoreContent({ playerName }: SwagStoreContentProps) {
                 Swag
               </span>
 
-              <Link
+              {/* <Link
                 href="/leaderboard"
                 className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-200 transition-colors hover:bg-white/10"
               >
                 Leaderboard
-              </Link>
+              </Link> */}
             </div>
 
             <div>

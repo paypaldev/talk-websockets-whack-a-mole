@@ -3,8 +3,16 @@
 import { type RealtimeChannel } from '@supabase/supabase-js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import ReactCanvasConfetti from 'react-canvas-confetti'
+import { Toaster, toast } from 'sonner'
+import {
+  assignConfettiLauncher,
+  fireCelebrationConfetti,
+  type ConfettiLauncher,
+} from '@/lib/confetti'
 import {
   GAME_RESULTS_LEADERBOARD_CHANNEL,
+  LEADERBOARD_SWAG_ORDERS_CHANNEL,
   LEADERBOARD_SWAG_CHANNEL,
   type SwagCelebrationBroadcastPayload,
   type SwagCheckoutBroadcastPayload,
@@ -42,6 +50,12 @@ interface GameResultRealtimeRow {
   misses: number
 }
 
+interface SwagOrderRealtimeRow {
+  id: string
+  status: string
+  playerName: string
+}
+
 function isGameResultRealtimeRow(value: unknown): value is GameResultRealtimeRow {
   if (!value || typeof value !== 'object') {
     return false
@@ -53,6 +67,71 @@ function isGameResultRealtimeRow(value: unknown): value is GameResultRealtimeRow
     typeof candidate.playerName === 'string' &&
     typeof candidate.score === 'number' &&
     typeof candidate.misses === 'number'
+  )
+}
+
+function isSwagOrderRealtimeRow(value: unknown): value is SwagOrderRealtimeRow {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const candidate = value as Record<string, unknown>
+  return (
+    typeof candidate.id === 'string' &&
+    typeof candidate.status === 'string' &&
+    typeof candidate.playerName === 'string'
+  )
+}
+
+function PendingOrderIcon() {
+  return (
+    <span className="inline-flex size-6 items-center justify-center rounded-full border border-amber-100 bg-amber-300 text-amber-950 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]">
+      <svg viewBox="0 0 24 24" className="size-3.5" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8" />
+        <path
+          d="M12 7.5V12L14.8 13.6"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  )
+}
+
+function PaidOrderIcon() {
+  return (
+    <span className="inline-flex size-6 items-center justify-center rounded-full border border-emerald-100 bg-emerald-300 text-emerald-950 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]">
+      <svg viewBox="0 0 24 24" className="size-3.5" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8" />
+        <path
+          d="M8.5 12.3L10.8 14.6L15.5 9.9"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  )
+}
+
+function PendingOrderDescription({ playerName }: { playerName: string }) {
+  return (
+    <span>
+      <span className="rounded bg-amber-300 px-1 py-0.5 font-bold text-amber-950">{playerName}</span>{' '}
+      started checkout
+    </span>
+  )
+}
+
+function PaidOrderDescription({ playerName }: { playerName: string }) {
+  return (
+    <span>
+      <span className="rounded bg-emerald-300 px-1 py-0.5 font-bold text-emerald-950">{playerName}</span>{' '}
+      completed checkout
+    </span>
   )
 }
 
@@ -266,6 +345,7 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
   const [isSwagCheckoutEnabled, setIsSwagCheckoutEnabled] = useState(true)
   const [swagChannelReady, setSwagChannelReady] = useState(false)
   const swagChannelRef = useRef<RealtimeChannel | null>(null)
+  const confettiRef = useRef<ConfettiLauncher | null>(null)
   const swagAnimationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const celebrationAnimationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -346,6 +426,7 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
 
     const resultsChannel = supabase.channel(GAME_RESULTS_LEADERBOARD_CHANNEL)
     const swagChannel = (swagChannelRef.current = supabase.channel(LEADERBOARD_SWAG_CHANNEL))
+    const swagOrdersChannel = supabase.channel(LEADERBOARD_SWAG_ORDERS_CHANNEL)
 
     const syncRows = async () => {
       const { data, error } = await supabase
@@ -397,6 +478,58 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
         setSwagChannelReady(status === 'SUBSCRIBED')
       })
 
+    swagOrdersChannel
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'swag_orders' }, (payload) => {
+        if (!isSwagOrderRealtimeRow(payload.new)) {
+          return
+        }
+
+        if (payload.new.status === 'pending') {
+          toast('New order pending', {
+            description: <PendingOrderDescription playerName={payload.new.playerName} />,
+            duration: 9000,
+            icon: <PendingOrderIcon />,
+          })
+        }
+
+        if (payload.new.status === 'paid') {
+          toast.success('Order paid', {
+            description: <PaidOrderDescription playerName={payload.new.playerName} />,
+            duration: 9000,
+            icon: <PaidOrderIcon />,
+          })
+          fireCelebrationConfetti(confettiRef.current)
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'swag_orders' }, (payload) => {
+        const previousRow = isSwagOrderRealtimeRow(payload.old) ? payload.old : null
+        const nextRow = isSwagOrderRealtimeRow(payload.new) ? payload.new : null
+
+        if (!nextRow) {
+          return
+        }
+
+        const previousStatus = previousRow?.status
+
+        if (nextRow.status === 'pending' && previousStatus !== 'pending') {
+          toast('New order pending', {
+            description: <PendingOrderDescription playerName={nextRow.playerName} />,
+            duration: 9000,
+            icon: <PendingOrderIcon />,
+          })
+        }
+
+        if (nextRow.status === 'paid' && previousStatus !== 'paid') {
+          toast.success('Order paid', {
+            description: <PaidOrderDescription playerName={nextRow.playerName} />,
+            duration: 9000,
+            icon: <PaidOrderIcon />,
+          })
+          fireCelebrationConfetti(confettiRef.current)
+        }
+      })
+      .subscribe()
+
     return () => {
       isMounted = false
       setRealtimeStatus('offline')
@@ -410,6 +543,7 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
       swagChannelRef.current = null
       void resultsChannel.unsubscribe()
       void swagChannel.unsubscribe()
+      void swagOrdersChannel.unsubscribe()
     }
   }, [])
 
@@ -446,6 +580,26 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0a0a0a] px-4 py-10 text-zinc-100 sm:px-6 lg:px-8">
+      <ReactCanvasConfetti
+        className="pointer-events-none fixed inset-0 z-40"
+        style={{ width: '100vw', height: '100vh' }}
+        globalOptions={{ resize: true, useWorker: true }}
+        onInit={({ confetti }) => {
+          assignConfettiLauncher(confettiRef, confetti)
+        }}
+      />
+
+      <Toaster
+        position="top-right"
+        richColors
+        closeButton
+        toastOptions={{
+          className:
+            'rounded-xl border-2 border-white/60 bg-zinc-900 text-white shadow-[0_18px_40px_rgba(0,0,0,0.65)] backdrop-blur-md',
+          duration: 9000,
+        }}
+      />
+
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.2),transparent_40%),radial-gradient(circle_at_85%_15%,rgba(255,255,255,0.06),transparent_30%)]" />
 
       <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-8">
