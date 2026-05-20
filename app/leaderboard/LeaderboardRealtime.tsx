@@ -83,6 +83,30 @@ function isSwagOrderRealtimeRow(value: unknown): value is SwagOrderRealtimeRow {
   )
 }
 
+function toPlayerResult(value: unknown): PlayerResult | null {
+  if (!isGameResultRealtimeRow(value)) {
+    return null
+  }
+
+  return {
+    id: value.id,
+    name: value.playerName,
+    hits: value.score,
+    misses: value.misses,
+  }
+}
+
+function upsertPlayerResult(currentRows: PlayerResult[], nextRow: PlayerResult): PlayerResult[] {
+  const existingIndex = currentRows.findIndex((row) => row.id === nextRow.id)
+  if (existingIndex === -1) {
+    return [...currentRows, nextRow]
+  }
+
+  const nextRows = [...currentRows]
+  nextRows[existingIndex] = nextRow
+  return nextRows
+}
+
 function PendingOrderIcon() {
   return (
     <span className="inline-flex size-6 items-center justify-center rounded-full border border-amber-100 bg-amber-300 text-amber-950 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]">
@@ -457,8 +481,13 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
 
     const statusesToResync = ['SUBSCRIBED', 'TIMED_OUT', 'CHANNEL_ERROR', 'CLOSED'] as const
     resultsChannel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'game_results' }, () => {
-        void syncRows()
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'game_results' }, (payload) => {
+        const nextRow = toPlayerResult(payload.new)
+        if (!nextRow) {
+          return
+        }
+
+        setRows((currentRows) => upsertPlayerResult(currentRows, nextRow))
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
