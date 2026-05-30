@@ -1,14 +1,49 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 
-export const GAME_DURATION = 30
+export const GAME_DURATION = 60
 const NUM_HOLES = 9
 const PAYPAL_MOLE_MAX = 3 // exactly 3 PayPal logos per game
 
-// Speed ramp: mole visible duration and gap between spawns both shrink over time
-const INITIAL_VISIBLE_MS = 1200
-const FINAL_VISIBLE_MS = 300
-const INITIAL_GAP_MS = 700
-const FINAL_GAP_MS = 100
+interface DifficultyPhaseConfig {
+  startSec: number
+  endSec: number | null
+  startVisibleMs: number
+  endVisibleMs: number
+  startGapMs: number
+  endGapMs: number
+  curvePower: number
+}
+
+// Difficulty tuning lives here so phase boundaries and timings are easy to change.
+export const DIFFICULTY_PHASES: readonly DifficultyPhaseConfig[] = [
+  {
+    startSec: 0,
+    endSec: 15,
+    startVisibleMs: 1200,
+    endVisibleMs: 900,
+    startGapMs: 700,
+    endGapMs: 500,
+    curvePower: 1,
+  },
+  {
+    startSec: 15,
+    endSec: 30,
+    startVisibleMs: 900,
+    endVisibleMs: 560,
+    startGapMs: 500,
+    endGapMs: 280,
+    curvePower: 0.85,
+  },
+  {
+    startSec: 30,
+    endSec: null,
+    startVisibleMs: 560,
+    endVisibleMs: 120,
+    startGapMs: 280,
+    endGapMs: 45,
+    curvePower: 0.8,
+  },
+]
 
 export type GameState = 'idle' | 'playing' | 'ended'
 export type MoleType = 'mole' | 'paypal'
@@ -25,6 +60,37 @@ export interface GameEngineReturn {
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * Math.min(1, Math.max(0, t))
+}
+
+interface SpawnTiming {
+  visibleMs: number
+  gapMs: number
+}
+
+export function getDifficultyPhaseIndex(elapsedSecs: number): number {
+  const clampedElapsedSecs = Math.min(Math.max(0, elapsedSecs), GAME_DURATION)
+
+  const phaseIndex = DIFFICULTY_PHASES.findIndex(
+    currentPhase =>
+      clampedElapsedSecs >= currentPhase.startSec &&
+      (currentPhase.endSec === null || clampedElapsedSecs < currentPhase.endSec)
+  )
+
+  return phaseIndex === -1 ? DIFFICULTY_PHASES.length - 1 : phaseIndex
+}
+
+function getSpawnTiming(elapsedSecs: number): SpawnTiming {
+  const phase = DIFFICULTY_PHASES[getDifficultyPhaseIndex(elapsedSecs)]
+
+  const phaseDurationSecs =
+    phase.endSec === null ? Math.max(1, GAME_DURATION - phase.startSec) : phase.endSec - phase.startSec
+  const phaseProgress = Math.min(1, Math.max(0, (elapsedSecs - phase.startSec) / phaseDurationSecs))
+  const easedProgress = Math.pow(phaseProgress, phase.curvePower)
+
+  return {
+    visibleMs: lerp(phase.startVisibleMs, phase.endVisibleMs, easedProgress),
+    gapMs: lerp(phase.startGapMs, phase.endGapMs, easedProgress),
+  }
 }
 
 export function useGameEngine(): GameEngineReturn {
@@ -66,9 +132,7 @@ export function useGameEngine(): GameEngineReturn {
       if (cancelled) return
 
       const elapsedSecs = (Date.now() - startTimeRef.current) / 1000
-      const t = Math.min(1, elapsedSecs / GAME_DURATION)
-      const visibleMs = lerp(INITIAL_VISIBLE_MS, FINAL_VISIBLE_MS, t)
-      const gapMs = lerp(INITIAL_GAP_MS, FINAL_GAP_MS, t)
+      const { visibleMs, gapMs } = getSpawnTiming(elapsedSecs)
 
       const available = Array.from({ length: NUM_HOLES }, (_, i) => i).filter(
         i => !activeMolesRef.current.has(i)

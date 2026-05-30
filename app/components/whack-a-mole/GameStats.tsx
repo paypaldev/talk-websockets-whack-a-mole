@@ -1,4 +1,4 @@
-import { GAME_DURATION } from './useGameEngine'
+import { GAME_DURATION, getDifficultyPhaseIndex } from './useGameEngine'
 
 interface GameStatsProps {
   score: number
@@ -7,7 +7,19 @@ interface GameStatsProps {
 
 export function GameStats({ score, timeRemaining }: GameStatsProps) {
   const progressPercent = (timeRemaining / GAME_DURATION) * 100
+  const elapsedSecs = GAME_DURATION - timeRemaining
+  const difficultyPhaseIndex = getDifficultyPhaseIndex(elapsedSecs)
   const isUrgent = timeRemaining <= 10
+
+  const progressBarBackgrounds = [
+    'linear-gradient(90deg, #60a5fa 0%, #22d3ee 100%)',
+    'linear-gradient(90deg, #fb923c 0%, #f97316 100%)',
+    'linear-gradient(90deg, #fb7185 0%, #f43f5e 100%)',
+  ] as const
+
+  const progressBarBackground =
+    progressBarBackgrounds[difficultyPhaseIndex] ??
+    progressBarBackgrounds[progressBarBackgrounds.length - 1]
 
   return (
     <div className="border-b border-white/10 px-4 py-3.5">
@@ -40,9 +52,7 @@ export function GameStats({ score, timeRemaining }: GameStatsProps) {
           className="h-full rounded-full transition-all duration-1000 ease-linear"
           style={{
             width: `${progressPercent}%`,
-            background: isUrgent
-              ? 'linear-gradient(90deg, #fb7185 0%, #f43f5e 100%)'
-              : 'linear-gradient(90deg, #60a5fa 0%, #22d3ee 100%)',
+            background: progressBarBackground,
           }}
         />
       </div>

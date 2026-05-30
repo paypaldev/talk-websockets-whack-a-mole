@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { GAME_DURATION } from './useGameEngine'
 
 interface StartScreenProps {
   onStart: () => void
@@ -21,7 +22,7 @@ export function StartScreen({ onStart, showSwagStoreButton = false }: StartScree
       <div>
         <h2 className="mb-2 text-2xl font-semibold tracking-tight text-zinc-100">Tap to whack</h2>
         <p className="max-w-56 text-sm leading-relaxed text-zinc-400">
-          Moles pop up for 30 seconds. Chase accuracy and rack up points fast.
+          Moles pop up for {GAME_DURATION} seconds. Chase accuracy and rack up points fast.
         </p>
       </div>
 
@@ -32,7 +33,7 @@ export function StartScreen({ onStart, showSwagStoreButton = false }: StartScree
         </div>
         <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/3 px-3 py-2">
           <span>Duration</span>
-          <span className="font-medium text-zinc-200">30s</span>
+          <span className="font-medium text-zinc-200">{GAME_DURATION}s</span>
         </div>
         <div className="mt-1 flex items-center gap-2 rounded-lg border border-sky-300/30 bg-sky-400/10 px-3 py-2 text-sky-200">
           <Image src="/paypal-logo.svg" alt="PayPal" width={20} height={20} className="shrink-0" />
