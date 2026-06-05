@@ -1,3 +1,5 @@
+export const MAX_PLAYER_NAME_LENGTH = 80
+
 /** Returns the trimmed player name without any validation. */
 export function normalizePlayerName(rawName: string): string {
   return rawName.trim()
@@ -15,8 +17,8 @@ export function validatePlayerName(rawName: string): string {
     throw new Error('Player name is required.')
   }
 
-  if (playerName.length > 80) {
-    throw new Error('Player name must be 80 characters or fewer.')
+  if (playerName.length > MAX_PLAYER_NAME_LENGTH) {
+    throw new Error(`Player name must be ${MAX_PLAYER_NAME_LENGTH} characters or fewer.`)
   }
 
   return playerName
