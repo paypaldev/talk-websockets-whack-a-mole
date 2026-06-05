@@ -5,6 +5,7 @@ interface EndScreenProps {
   misses: number
   onRestart: () => void
   showSwagStoreButton?: boolean
+  scoreSubmissionErrorMessage?: string | null
 }
 
 function getRating(score: number): { emoji: string; label: string } {
@@ -15,7 +16,13 @@ function getRating(score: number): { emoji: string; label: string } {
   return { emoji: '🐌', label: 'Keep trying!' }
 }
 
-export function EndScreen({ score, misses, onRestart, showSwagStoreButton = false }: EndScreenProps) {
+export function EndScreen({
+  score,
+  misses,
+  onRestart,
+  showSwagStoreButton = false,
+  scoreSubmissionErrorMessage = null,
+}: EndScreenProps) {
   const { emoji, label } = getRating(score)
   const total = score + misses
   const accuracy = total === 0 ? 0 : Math.round((score / total) * 100)
@@ -61,6 +68,15 @@ export function EndScreen({ score, misses, onRestart, showSwagStoreButton = fals
           <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-400">Accuracy</span>
         </div>
       </div>
+
+      {scoreSubmissionErrorMessage ? (
+        <p
+          className="w-full rounded-lg border border-rose-300/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-200"
+          role="status"
+        >
+          {scoreSubmissionErrorMessage}
+        </p>
+      ) : null}
 
       {showSwagStoreButton ? (
         <Link
