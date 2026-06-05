@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from 'react'
 
-const PLAYER_NAME_KEY = 'whack-a-mole-player-name'
+export const PLAYER_NAME_KEY = 'whack-a-mole-player-name'
 const PLAYER_NAME_EVENT = 'whack-a-mole-player-name-changed'
 
 function subscribe(onStoreChange: () => void): () => void {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 
 export const GAME_DURATION = 60
-const NUM_HOLES = 9
+export const NUM_HOLES = 9
 const PAYPAL_MOLE_MAX = 3 // exactly 3 PayPal logos per game
 
 interface DifficultyPhaseConfig {
@@ -148,11 +148,10 @@ export function useGameEngine(): GameEngineReturn {
 
       // Decide mole type: PayPal only appears in the last 10 seconds
       let moleType: MoleType = 'mole'
-      const elapsedSecs2 = (Date.now() - startTimeRef.current) / 1000
-      if (paypalSpawnedRef.current < PAYPAL_MOLE_MAX && elapsedSecs2 >= GAME_DURATION - 10) {
+      if (paypalSpawnedRef.current < PAYPAL_MOLE_MAX && elapsedSecs >= GAME_DURATION - 10) {
         const remaining = PAYPAL_MOLE_MAX - paypalSpawnedRef.current
         // Spread across the remaining 10s window
-        const windowFrac = Math.min(1, (elapsedSecs2 - (GAME_DURATION - 10)) / 10)
+        const windowFrac = Math.min(1, (elapsedSecs - (GAME_DURATION - 10)) / 10)
         const spawnChance = remaining / (NUM_HOLES * (1 - windowFrac + 0.1))
         if (Math.random() < spawnChance) {
           moleType = 'paypal'
@@ -214,7 +213,6 @@ export function useGameEngine(): GameEngineReturn {
     setTimeRemaining(GAME_DURATION)
     setActiveMoles(new Map())
     activeMolesRef.current = new Map()
-    paypalSpawnedRef.current = 0
     paypalSpawnedRef.current = 0
     setGameState('playing')
   }, [])

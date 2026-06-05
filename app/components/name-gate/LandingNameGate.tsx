@@ -4,7 +4,8 @@ import { SyntheticEvent, useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { validatePlayerNameAction } from '@/app/actions/validatePlayerName'
-import { notifyStoredPlayerNameChanged } from './useStoredPlayerName'
+import { MAX_PLAYER_NAME_LENGTH } from '@/lib/playerName'
+import { notifyStoredPlayerNameChanged, PLAYER_NAME_KEY } from './useStoredPlayerName'
 import { RequireNoPlayerName } from './RequireNoPlayerName'
 
 export function LandingNameGate() {
@@ -32,7 +33,7 @@ export function LandingNameGate() {
         return
       }
 
-      window.localStorage.setItem('whack-a-mole-player-name', trimmedName)
+      window.localStorage.setItem(PLAYER_NAME_KEY, trimmedName)
       notifyStoredPlayerNameChanged()
       router.push('/game')
     } catch {
@@ -85,7 +86,7 @@ export function LandingNameGate() {
               }}
               className="w-full rounded-lg border border-white/15 bg-white/3 px-3.5 py-3 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-sky-300/70"
               placeholder="e.g. Alex"
-              maxLength={40}
+              maxLength={MAX_PLAYER_NAME_LENGTH}
               autoFocus
               required
             />
