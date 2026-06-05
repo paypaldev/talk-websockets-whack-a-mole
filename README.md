@@ -45,7 +45,7 @@ npm run prisma:migrate -- --name init_game_results
 npm run prisma:generate
 ```
 
-1. Start the app:
+5. Start the app:
 
 ```bash
 npm run dev
