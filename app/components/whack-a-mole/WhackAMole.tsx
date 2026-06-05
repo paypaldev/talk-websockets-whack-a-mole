@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { saveGameResultAction } from '@/app/actions/saveGameResult'
+import { startGameSessionAction } from '@/app/actions/startGameSession'
 import { useGameEngine } from './useGameEngine'
 import { GameBoard } from './GameBoard'
 import { GameStats } from './GameStats'
@@ -19,12 +20,59 @@ interface WhackAMoleProps {
   playerName?: string
 }
 
+interface ActiveGameSession {
+  sessionId: string
+  sessionToken: string
+}
+
 export function WhackAMole({ playerName }: WhackAMoleProps) {
   const { gameState, score, misses, timeRemaining, activeMoles, startGame, whackMole } =
     useGameEngine()
   const [showSwagStoreButton, setShowSwagStoreButton] = useState(false)
+  const [scoreSubmissionErrorMessage, setScoreSubmissionErrorMessage] = useState<string | null>(null)
+  const activeGameSessionRef = useRef<ActiveGameSession | null>(null)
   const previousGameStateRef = useRef(gameState)
   const realtimeSessionIdRef = useRef<string | null>(null)
+
+  const handleStartGame = () => {
+    setScoreSubmissionErrorMessage(null)
+    startGame()
+  }
+
+  useEffect(() => {
+    if (gameState !== 'playing') {
+      return
+    }
+
+    const trimmedPlayerName = playerName?.trim()
+    if (!trimmedPlayerName) {
+      activeGameSessionRef.current = null
+      return
+    }
+
+    activeGameSessionRef.current = null
+
+    let isCancelled = false
+
+    const beginSession = async () => {
+      try {
+        const session = await startGameSessionAction(trimmedPlayerName)
+        if (!isCancelled) {
+          activeGameSessionRef.current = session
+        }
+      } catch {
+        if (!isCancelled) {
+          activeGameSessionRef.current = null
+        }
+      }
+    }
+
+    void beginSession()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [gameState, playerName])
 
   useEffect(() => {
     const previousGameState = previousGameStateRef.current
@@ -35,17 +83,38 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
     }
 
     const trimmedPlayerName = playerName?.trim()
-    if (!trimmedPlayerName) {
+    const activeGameSession = activeGameSessionRef.current
+    if (!trimmedPlayerName || !activeGameSession) {
       return
     }
 
-    void saveGameResultAction({
-        playerName: trimmedPlayerName,
-        score,
-        misses,
-      }).catch(() => {
-        // Intentionally swallow to avoid blocking end-screen UX.
-      })
+    const submitResult = async () => {
+      if (!activeGameSession) {
+        setScoreSubmissionErrorMessage(
+          'Your score could not be submitted. Please press Play Again and try once more.',
+        )
+        return
+      }
+
+      try {
+        await saveGameResultAction({
+          sessionId: activeGameSession.sessionId,
+          sessionToken: activeGameSession.sessionToken,
+          playerName: trimmedPlayerName,
+          score,
+          misses,
+        })
+        setScoreSubmissionErrorMessage(null)
+      } catch {
+        setScoreSubmissionErrorMessage(
+          'Your score could not be submitted. Please press Play Again and try once more.',
+        )
+      } finally {
+        activeGameSessionRef.current = null
+      }
+    }
+
+    void submitResult()
   }, [gameState, misses, playerName, score])
 
   useEffect(() => {
@@ -131,7 +200,7 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
       </div>
 
       {gameState === 'idle' && (
-        <StartScreen onStart={startGame} showSwagStoreButton={showSwagStoreButton} />
+        <StartScreen onStart={handleStartGame} showSwagStoreButton={showSwagStoreButton} />
       )}
 
       {gameState === 'playing' && (
@@ -145,8 +214,9 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
         <EndScreen
           score={score}
           misses={misses}
-          onRestart={startGame}
+          onRestart={handleStartGame}
           showSwagStoreButton={showSwagStoreButton}
+          scoreSubmissionErrorMessage={scoreSubmissionErrorMessage}
         />
       )}
     </div>

@@ -30,3 +30,16 @@ model SwagOrder {
     @@index([createdAt])
     @@map("swag_orders")
 }
+
+model GameSession {
+    id               String    @id @default(cuid())
+    playerName       String    @db.VarChar(80)
+    sessionTokenHash String    @db.VarChar(64)
+    createdAt        DateTime  @default(now())
+    expiresAt        DateTime
+    consumedAt       DateTime?
+
+    @@index([createdAt])
+    @@index([expiresAt])
+    @@map("game_sessions")
+}
