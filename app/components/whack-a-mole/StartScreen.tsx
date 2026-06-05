@@ -26,6 +26,13 @@ export function StartScreen({ onStart, showSwagStoreButton = false }: StartScree
         </p>
       </div>
 
+      <div className="flex w-full items-center gap-2.5 rounded-lg border border-amber-400/20 bg-amber-400/8 px-3.5 py-2.5 text-left">
+        <span className="text-base leading-none">🎁</span>
+        <p className="text-xs leading-snug text-amber-200/90">
+          <span className="font-semibold">Win an iPad!</span> Highest score at 5pm takes it home! Come to the PayPal booth to claim.
+        </p>
+      </div>
+
       <div className="w-full space-y-2 text-left text-xs text-zinc-400">
         <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/3 px-3 py-2">
           <span>Speed ramp</span>
