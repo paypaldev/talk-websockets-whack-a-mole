@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 
 export const GAME_DURATION = 60
 export const NUM_HOLES = 9
+export const PAYPAL_BONUS_POINTS = 10
+export const PAYPAL_BONUS_WINDOW_SECONDS = Number(process.env.NEXT_PUBLIC_PAYPAL_BONUS_WINDOW_SECONDS ?? 30)
 const PAYPAL_MOLE_MAX = 3 // exactly 3 PayPal logos per game
+const PAYPAL_WINDOW_START = GAME_DURATION - PAYPAL_BONUS_WINDOW_SECONDS
 
 interface DifficultyPhaseConfig {
   startSec: number
@@ -146,12 +149,11 @@ export function useGameEngine(): GameEngineReturn {
 
       const holeIndex = available[Math.floor(Math.random() * available.length)]
 
-      // Decide mole type: PayPal only appears in the last 10 seconds
+      // Decide mole type: PayPal appears only in the last 30 seconds.
       let moleType: MoleType = 'mole'
-      if (paypalSpawnedRef.current < PAYPAL_MOLE_MAX && elapsedSecs >= GAME_DURATION - 10) {
+      if (paypalSpawnedRef.current < PAYPAL_MOLE_MAX && elapsedSecs >= PAYPAL_WINDOW_START) {
         const remaining = PAYPAL_MOLE_MAX - paypalSpawnedRef.current
-        // Spread across the remaining 10s window
-        const windowFrac = Math.min(1, (elapsedSecs - (GAME_DURATION - 10)) / 10)
+        const windowFrac = Math.min(1, (elapsedSecs - PAYPAL_WINDOW_START) / PAYPAL_BONUS_WINDOW_SECONDS)
         const spawnChance = remaining / (NUM_HOLES * (1 - windowFrac + 0.1))
         if (Math.random() < spawnChance) {
           moleType = 'paypal'
@@ -229,7 +231,7 @@ export function useGameEngine(): GameEngineReturn {
       activeMolesRef.current = next
       return next
     })
-    setScore(prev => prev + (type === 'paypal' ? 10 : 1))
+    setScore(prev => prev + (type === 'paypal' ? PAYPAL_BONUS_POINTS : 1))
   }, [])
 
   return { gameState, score, misses, timeRemaining, activeMoles, startGame, whackMole }

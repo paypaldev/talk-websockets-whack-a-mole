@@ -1,13 +1,20 @@
-import Image from 'next/image'
-import Link from 'next/link'
-import { GAME_DURATION } from './useGameEngine'
+import Image from "next/image";
+import Link from "next/link";
+import {
+  GAME_DURATION,
+  PAYPAL_BONUS_POINTS,
+  PAYPAL_BONUS_WINDOW_SECONDS,
+} from "./useGameEngine";
 
 interface StartScreenProps {
-  onStart: () => void
-  showSwagStoreButton?: boolean
+  onStart: () => void;
+  showSwagStoreButton?: boolean;
 }
 
-export function StartScreen({ onStart, showSwagStoreButton = false }: StartScreenProps) {
+export function StartScreen({
+  onStart,
+  showSwagStoreButton = false,
+}: StartScreenProps) {
   return (
     <div className="flex flex-col items-center gap-6 px-6 py-10 text-center">
       <Image
@@ -16,20 +23,26 @@ export function StartScreen({ onStart, showSwagStoreButton = false }: StartScree
         width={116}
         height={72}
         className="drop-shadow-[0_8px_24px_rgba(255,255,255,0.15)]"
-        style={{ animation: 'mole-appear 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards' }}
+        style={{
+          animation: "mole-appear 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards",
+        }}
       />
 
       <div>
-        <h2 className="mb-2 text-2xl font-semibold tracking-tight text-zinc-100">Tap to whack</h2>
+        <h2 className="mb-2 text-2xl font-semibold tracking-tight text-zinc-100">
+          Tap to whack
+        </h2>
         <p className="max-w-56 text-sm leading-relaxed text-zinc-400">
-          Moles pop up for {GAME_DURATION} seconds. Chase accuracy and rack up points fast.
+          Moles pop up for {GAME_DURATION} seconds. Chase accuracy and rack up
+          points fast.
         </p>
       </div>
 
       <div className="flex w-full items-center gap-2.5 rounded-lg border border-amber-400/20 bg-amber-400/8 px-3.5 py-2.5 text-left">
         <span className="text-base leading-none">🎁</span>
         <p className="text-xs leading-snug text-amber-200/90">
-          <span className="font-semibold">Win an iPad!</span> Highest score at 5pm takes it home! Come to the PayPal booth to claim.
+          <span className="font-semibold">Win an iPad!</span> Highest score at
+          5pm takes it home! Come to the PayPal booth to claim.
         </p>
       </div>
 
@@ -43,8 +56,17 @@ export function StartScreen({ onStart, showSwagStoreButton = false }: StartScree
           <span className="font-medium text-zinc-200">{GAME_DURATION}s</span>
         </div>
         <div className="mt-1 flex items-center gap-2 rounded-lg border border-sky-300/30 bg-sky-400/10 px-3 py-2 text-sky-200">
-          <Image src="/paypal-logo.svg" alt="PayPal" width={20} height={20} className="shrink-0" />
-          <span>Bonus logo gives <strong>10 pts</strong> in the last 10 seconds</span>
+          <Image
+            src="/paypal-logo.svg"
+            alt="PayPal"
+            width={20}
+            height={20}
+            className="shrink-0"
+          />
+          <span>
+            Bonus logo gives <strong>{PAYPAL_BONUS_POINTS} pts</strong> in the
+            last {PAYPAL_BONUS_WINDOW_SECONDS} seconds
+          </span>
         </div>
       </div>
 
@@ -64,5 +86,5 @@ export function StartScreen({ onStart, showSwagStoreButton = false }: StartScree
         </button>
       )}
     </div>
-  )
+  );
 }
