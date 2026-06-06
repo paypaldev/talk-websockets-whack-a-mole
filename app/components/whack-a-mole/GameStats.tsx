@@ -1,4 +1,9 @@
-import { GAME_DURATION, getDifficultyPhaseIndex } from "./useGameEngine";
+import {
+  GAME_DURATION,
+  PAYPAL_BONUS_POINTS,
+  PAYPAL_MOLE_MAX,
+  getDifficultyPhaseIndex,
+} from "./useGameEngine";
 
 interface GameStatsProps {
   score: number;
@@ -37,6 +42,16 @@ export function GameStats({ score, timeRemaining }: GameStatsProps) {
             }}
           >
             {score}
+          </span>
+        </div>
+
+        <div className="flex-1 rounded-lg border border-sky-400/30 bg-sky-500/10 px-3 py-2 text-center text-[11px] leading-tight text-sky-100">
+          <span className="block font-semibold uppercase tracking-[0.16em] text-sky-200/85">
+            Heads up
+          </span>
+          <span className="mt-1 block">
+            PayPal logos are worth {PAYPAL_BONUS_POINTS} points. Only{" "}
+            {PAYPAL_MOLE_MAX} show up each game.
           </span>
         </div>
 

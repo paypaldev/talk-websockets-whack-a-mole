@@ -6,7 +6,7 @@ export const PAYPAL_BONUS_POINTS = 10;
 export const PAYPAL_BONUS_WINDOW_SECONDS = Number(
   process.env.NEXT_PUBLIC_PAYPAL_BONUS_WINDOW_SECONDS ?? 30,
 );
-const PAYPAL_MOLE_MAX = 3; // exactly 3 PayPal logos per game
+export const PAYPAL_MOLE_MAX = 3; // exactly 3 PayPal logos per game
 const PAYPAL_WINDOW_START = GAME_DURATION - PAYPAL_BONUS_WINDOW_SECONDS;
 
 interface DifficultyPhaseConfig {
