@@ -1,8 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import {
-  LeaderboardRealtime,
-  type PlayerResult,
-} from "./LeaderboardRealtime";
+import { LeaderboardRealtime, type PlayerResult } from "./LeaderboardRealtime";
 
 interface LeaderboardRowRecord {
   id: string;

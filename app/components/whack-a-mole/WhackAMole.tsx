@@ -1,99 +1,107 @@
-'use client'
+"use client";
 
-import { useEffect, useState, useRef } from 'react'
-import { saveGameResultAction } from '@/app/actions/saveGameResult'
-import { startGameSessionAction } from '@/app/actions/startGameSession'
-import { useGameEngine } from './useGameEngine'
-import { GameBoard } from './GameBoard'
-import { GameStats } from './GameStats'
-import { StartScreen } from './StartScreen'
-import { EndScreen } from './EndScreen'
+import { useEffect, useState, useRef } from "react";
+import { saveGameResultAction } from "@/app/actions/saveGameResult";
+import { startGameSessionAction } from "@/app/actions/startGameSession";
+import { useGameEngine } from "./useGameEngine";
+import { GameBoard } from "./GameBoard";
+import { GameStats } from "./GameStats";
+import { StartScreen } from "./StartScreen";
+import { EndScreen } from "./EndScreen";
 import {
   ACTIVE_GAMES_CHANNEL,
   LEADERBOARD_SWAG_CHANNEL,
   SWAG_STORE_ENABLED_EVENT,
   isSwagStoreBroadcastPayload,
   getSupabaseBrowserClient,
-} from '@/lib/supabaseBrowser'
+} from "@/lib/supabaseBrowser";
 
 interface WhackAMoleProps {
-  playerName?: string
+  playerName?: string;
 }
 
 interface ActiveGameSession {
-  sessionId: string
-  sessionToken: string
+  sessionId: string;
+  sessionToken: string;
 }
 
 export function WhackAMole({ playerName }: WhackAMoleProps) {
-  const { gameState, score, misses, timeRemaining, activeMoles, startGame, whackMole } =
-    useGameEngine()
-  const [showSwagStoreButton, setShowSwagStoreButton] = useState(false)
-  const [scoreSubmissionErrorMessage, setScoreSubmissionErrorMessage] = useState<string | null>(null)
-  const activeGameSessionRef = useRef<ActiveGameSession | null>(null)
-  const previousGameStateRef = useRef(gameState)
-  const realtimeSessionIdRef = useRef<string | null>(null)
+  const {
+    gameState,
+    score,
+    misses,
+    timeRemaining,
+    activeMoles,
+    startGame,
+    whackMole,
+  } = useGameEngine();
+  const [showSwagStoreButton, setShowSwagStoreButton] = useState(false);
+  const [scoreSubmissionErrorMessage, setScoreSubmissionErrorMessage] =
+    useState<string | null>(null);
+  const activeGameSessionRef = useRef<ActiveGameSession | null>(null);
+  const previousGameStateRef = useRef(gameState);
+  const realtimeSessionIdRef = useRef<string | null>(null);
 
   const handleStartGame = () => {
-    setScoreSubmissionErrorMessage(null)
-    startGame()
-  }
+    setScoreSubmissionErrorMessage(null);
+    startGame();
+  };
 
   useEffect(() => {
-    if (gameState !== 'playing') {
-      return
+    if (gameState !== "playing") {
+      return;
     }
 
-    const trimmedPlayerName = playerName?.trim()
+    const trimmedPlayerName = playerName?.trim();
     if (!trimmedPlayerName) {
-      activeGameSessionRef.current = null
-      return
+      activeGameSessionRef.current = null;
+      return;
     }
 
-    activeGameSessionRef.current = null
+    activeGameSessionRef.current = null;
 
-    let isCancelled = false
+    let isCancelled = false;
 
     const beginSession = async () => {
       try {
-        const session = await startGameSessionAction(trimmedPlayerName)
+        const session = await startGameSessionAction(trimmedPlayerName);
         if (!isCancelled) {
-          activeGameSessionRef.current = session
+          activeGameSessionRef.current = session;
         }
       } catch {
         if (!isCancelled) {
-          activeGameSessionRef.current = null
+          activeGameSessionRef.current = null;
         }
       }
-    }
+    };
 
-    void beginSession()
+    void beginSession();
 
     return () => {
-      isCancelled = true
-    }
-  }, [gameState, playerName])
+      isCancelled = true;
+    };
+  }, [gameState, playerName]);
 
   useEffect(() => {
-    const previousGameState = previousGameStateRef.current
-    previousGameStateRef.current = gameState
+    const previousGameState = previousGameStateRef.current;
+    previousGameStateRef.current = gameState;
 
-    if (previousGameState !== 'playing' || gameState !== 'ended') {
-      return
+    if (previousGameState !== "playing" || gameState !== "ended") {
+      return;
     }
 
-    const trimmedPlayerName = playerName?.trim()
-    const activeGameSession = activeGameSessionRef.current
+    const trimmedPlayerName = playerName?.trim();
+    const activeGameSession = activeGameSessionRef.current;
     if (!trimmedPlayerName || !activeGameSession) {
-      return
+      return;
     }
 
     const submitResult = async () => {
       if (!activeGameSession) {
         setScoreSubmissionErrorMessage(
-          'Your score could not be submitted. Please press Play Again and try once more.',
-        )
-        return
+          "Your score could not be submitted. Please press Play Again and try once more.",
+        );
+        return;
       }
 
       try {
@@ -103,57 +111,57 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
           playerName: trimmedPlayerName,
           score,
           misses,
-        })
-        setScoreSubmissionErrorMessage(null)
+        });
+        setScoreSubmissionErrorMessage(null);
       } catch {
         setScoreSubmissionErrorMessage(
-          'Your score could not be submitted. Please press Play Again and try once more.',
-        )
+          "Your score could not be submitted. Please press Play Again and try once more.",
+        );
       } finally {
-        activeGameSessionRef.current = null
+        activeGameSessionRef.current = null;
       }
-    }
+    };
 
-    void submitResult()
-  }, [gameState, misses, playerName, score])
+    void submitResult();
+  }, [gameState, misses, playerName, score]);
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient()
+    const supabase = getSupabaseBrowserClient();
     if (!supabase) {
-      return
+      return;
     }
 
-    const swagChannel = supabase.channel(LEADERBOARD_SWAG_CHANNEL)
+    const swagChannel = supabase.channel(LEADERBOARD_SWAG_CHANNEL);
 
     swagChannel
-      .on('broadcast', { event: SWAG_STORE_ENABLED_EVENT }, ({ payload }) => {
+      .on("broadcast", { event: SWAG_STORE_ENABLED_EVENT }, ({ payload }) => {
         if (!isSwagStoreBroadcastPayload(payload)) {
-          return
+          return;
         }
 
         if (payload.showSwagStore) {
-          setShowSwagStoreButton(true)
+          setShowSwagStoreButton(true);
         }
       })
-      .subscribe()
+      .subscribe();
 
     return () => {
-      void swagChannel.unsubscribe()
-    }
-  }, [])
+      void swagChannel.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
-    if (gameState !== 'playing') {
-      return
+    if (gameState !== "playing") {
+      return;
     }
 
-    const supabase = getSupabaseBrowserClient()
+    const supabase = getSupabaseBrowserClient();
     if (!supabase) {
-      return
+      return;
     }
 
     if (!realtimeSessionIdRef.current) {
-      realtimeSessionIdRef.current = crypto.randomUUID()
+      realtimeSessionIdRef.current = crypto.randomUUID();
     }
 
     const channel = supabase.channel(ACTIVE_GAMES_CHANNEL, {
@@ -162,33 +170,37 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
           key: realtimeSessionIdRef.current,
         },
       },
-    })
+    });
 
     channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
+      if (status === "SUBSCRIBED") {
         void channel.track({
-          playerName: playerName?.trim() || 'Anonymous',
+          playerName: playerName?.trim() || "Anonymous",
           startedAt: new Date().toISOString(),
-        })
+        });
       }
-    })
+    });
 
     return () => {
-      void channel.untrack()
-      void channel.unsubscribe()
-    }
-  }, [gameState, playerName])
+      void channel.untrack();
+      void channel.unsubscribe();
+    };
+  }, [gameState, playerName]);
 
   return (
     <div className="relative z-10 mx-auto w-full max-w-sm select-none overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/75 shadow-[0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-sm">
       <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3.5">
         <div className="flex items-center gap-2.5">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/paypal-logo.svg" alt="PayPal" className="h-8 w-8" />
           <div>
-            <h1 className="text-lg font-semibold tracking-tight text-zinc-100">Whack-a-Mole</h1>
+            <h1 className="text-lg font-semibold tracking-tight text-zinc-100">
+              Whack-a-Mole
+            </h1>
             {playerName && (
-              <p className="text-[11px] leading-none text-zinc-400">Player: {playerName}</p>
+              <p className="text-[11px] leading-none text-zinc-400">
+                Player: {playerName}
+              </p>
             )}
           </div>
         </div>
@@ -199,18 +211,21 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
         </div>
       </div>
 
-      {gameState === 'idle' && (
-        <StartScreen onStart={handleStartGame} showSwagStoreButton={showSwagStoreButton} />
+      {gameState === "idle" && (
+        <StartScreen
+          onStart={handleStartGame}
+          showSwagStoreButton={showSwagStoreButton}
+        />
       )}
 
-      {gameState === 'playing' && (
+      {gameState === "playing" && (
         <>
           <GameStats score={score} timeRemaining={timeRemaining} />
           <GameBoard activeMoles={activeMoles} onWhack={whackMole} />
         </>
       )}
 
-      {gameState === 'ended' && (
+      {gameState === "ended" && (
         <EndScreen
           score={score}
           misses={misses}
@@ -220,5 +235,5 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
         />
       )}
     </div>
-  )
+  );
 }

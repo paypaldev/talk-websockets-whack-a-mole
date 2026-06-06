@@ -1,23 +1,25 @@
-import type { MutableRefObject } from 'react'
+import type { MutableRefObject } from "react";
 
 export interface ConfettiOptions {
-  startVelocity: number
-  ticks: number
-  gravity: number
-  scalar: number
-  zIndex: number
-  particleCount: number
-  spread: number
+  startVelocity: number;
+  ticks: number;
+  gravity: number;
+  scalar: number;
+  zIndex: number;
+  particleCount: number;
+  spread: number;
   origin: {
-    x: number
-    y: number
-  }
+    x: number;
+    y: number;
+  };
 }
 
-export type ConfettiLauncher = (options: ConfettiOptions) => Promise<null> | null
+export type ConfettiLauncher = (
+  options: ConfettiOptions,
+) => Promise<null> | null;
 
 function isConfettiLauncher(value: unknown): value is ConfettiLauncher {
-  return typeof value === 'function'
+  return typeof value === "function";
 }
 
 export function assignConfettiLauncher(
@@ -25,15 +27,17 @@ export function assignConfettiLauncher(
   confetti: unknown,
 ): void {
   if (!isConfettiLauncher(confetti)) {
-    return
+    return;
   }
 
-  confettiRef.current = confetti
+  confettiRef.current = confetti;
 }
 
-export function fireCelebrationConfetti(confetti: ConfettiLauncher | null): void {
+export function fireCelebrationConfetti(
+  confetti: ConfettiLauncher | null,
+): void {
   if (!confetti) {
-    return
+    return;
   }
 
   const baseConfig = {
@@ -42,25 +46,25 @@ export function fireCelebrationConfetti(confetti: ConfettiLauncher | null): void
     gravity: 0.8,
     scalar: 1,
     zIndex: 150,
-  }
+  };
 
   confetti({
     ...baseConfig,
     particleCount: 160,
     spread: 135,
     origin: { x: 0.5, y: 0.56 },
-  })
+  });
   confetti({
     ...baseConfig,
     particleCount: 120,
     startVelocity: 50,
     spread: 95,
     origin: { x: 0.5, y: 0.38 },
-  })
+  });
   confetti({
     ...baseConfig,
     particleCount: 120,
     spread: 180,
     origin: { x: 0.5, y: 0.72 },
-  })
+  });
 }

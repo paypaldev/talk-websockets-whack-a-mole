@@ -32,7 +32,7 @@ npx supabase init
 npx supabase start
 ```
 
-   Once started, the CLI prints a credentials table. Copy the **Publishable** key and paste it into `.env`:
+Once started, the CLI prints a credentials table. Copy the **Publishable** key and paste it into `.env`:
 
 ```text
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<Publishable key from the output above>

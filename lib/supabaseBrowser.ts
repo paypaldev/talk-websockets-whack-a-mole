@@ -1,72 +1,77 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-let cachedClient: SupabaseClient | null | undefined
+let cachedClient: SupabaseClient | null | undefined;
 
-export const ACTIVE_GAMES_CHANNEL = 'leaderboard:games:active'
-export const GAME_RESULTS_CHANNEL = 'leaderboard:games:results'
-export const GAME_RESULTS_LEADERBOARD_CHANNEL = 'leaderboard:games:results:leaderboard'
-export const LEADERBOARD_SWAG_CHANNEL = 'leaderboard:swag'
-export const LEADERBOARD_SWAG_ORDERS_CHANNEL = 'leaderboard:swag:orders'
-export const SWAG_STORE_ENABLED_EVENT = 'leaderboard:swag:store:enabled'
-export const SWAG_STORE_CHECKOUT_ENABLED_EVENT = 'leaderboard:swag:store:checkout:enabled'
-export const SWAG_STORE_CELEBRATION_EVENT = 'leaderboard:swag:store:celebration'
+export const ACTIVE_GAMES_CHANNEL = "leaderboard:games:active";
+export const GAME_RESULTS_CHANNEL = "leaderboard:games:results";
+export const GAME_RESULTS_LEADERBOARD_CHANNEL =
+  "leaderboard:games:results:leaderboard";
+export const LEADERBOARD_SWAG_CHANNEL = "leaderboard:swag";
+export const LEADERBOARD_SWAG_ORDERS_CHANNEL = "leaderboard:swag:orders";
+export const SWAG_STORE_ENABLED_EVENT = "leaderboard:swag:store:enabled";
+export const SWAG_STORE_CHECKOUT_ENABLED_EVENT =
+  "leaderboard:swag:store:checkout:enabled";
+export const SWAG_STORE_CELEBRATION_EVENT =
+  "leaderboard:swag:store:celebration";
 
 export interface SwagStoreBroadcastPayload {
-  showSwagStore: boolean
+  showSwagStore: boolean;
 }
 
 export interface SwagCheckoutBroadcastPayload {
-  enabled: boolean
+  enabled: boolean;
 }
 
 export interface SwagCelebrationBroadcastPayload {
-  launchedAt: number
+  launchedAt: number;
 }
 
-export function isSwagStoreBroadcastPayload(value: unknown): value is SwagStoreBroadcastPayload {
-  if (!value || typeof value !== 'object') {
-    return false
+export function isSwagStoreBroadcastPayload(
+  value: unknown,
+): value is SwagStoreBroadcastPayload {
+  if (!value || typeof value !== "object") {
+    return false;
   }
 
-  const candidate = value as Record<string, unknown>
-  return typeof candidate.showSwagStore === 'boolean'
+  const candidate = value as Record<string, unknown>;
+  return typeof candidate.showSwagStore === "boolean";
 }
 
 export function isSwagCheckoutBroadcastPayload(
   value: unknown,
 ): value is SwagCheckoutBroadcastPayload {
-  if (!value || typeof value !== 'object') {
-    return false
+  if (!value || typeof value !== "object") {
+    return false;
   }
 
-  const candidate = value as Record<string, unknown>
-  return typeof candidate.enabled === 'boolean'
+  const candidate = value as Record<string, unknown>;
+  return typeof candidate.enabled === "boolean";
 }
 
 export function isSwagCelebrationBroadcastPayload(
   value: unknown,
 ): value is SwagCelebrationBroadcastPayload {
-  if (!value || typeof value !== 'object') {
-    return false
+  if (!value || typeof value !== "object") {
+    return false;
   }
 
-  const candidate = value as Record<string, unknown>
-  return typeof candidate.launchedAt === 'number'
+  const candidate = value as Record<string, unknown>;
+  return typeof candidate.launchedAt === "number";
 }
 
 export function getSupabaseBrowserClient(): SupabaseClient | null {
   if (cachedClient !== undefined) {
-    return cachedClient
+    return cachedClient;
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    cachedClient = null
-    return cachedClient
+    cachedClient = null;
+    return cachedClient;
   }
 
-  cachedClient = createClient(supabaseUrl, supabaseAnonKey)
-  return cachedClient
+  cachedClient = createClient(supabaseUrl, supabaseAnonKey);
+  return cachedClient;
 }

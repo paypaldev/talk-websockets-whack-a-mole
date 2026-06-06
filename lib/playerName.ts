@@ -1,8 +1,8 @@
-export const MAX_PLAYER_NAME_LENGTH = 80
+export const MAX_PLAYER_NAME_LENGTH = 80;
 
 /** Returns the trimmed player name without any validation. */
 export function normalizePlayerName(rawName: string): string {
-  return rawName.trim()
+  return rawName.trim();
 }
 
 /**
@@ -11,15 +11,17 @@ export function normalizePlayerName(rawName: string): string {
  * Returns the trimmed name on success.
  */
 export function validatePlayerName(rawName: string): string {
-  const playerName = normalizePlayerName(rawName)
+  const playerName = normalizePlayerName(rawName);
 
   if (playerName.length === 0) {
-    throw new Error('Player name is required.')
+    throw new Error("Player name is required.");
   }
 
   if (playerName.length > MAX_PLAYER_NAME_LENGTH) {
-    throw new Error(`Player name must be ${MAX_PLAYER_NAME_LENGTH} characters or fewer.`)
+    throw new Error(
+      `Player name must be ${MAX_PLAYER_NAME_LENGTH} characters or fewer.`,
+    );
   }
 
-  return playerName
+  return playerName;
 }

@@ -14,7 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "PayPal Whack-a-Mole Demo",
-  description: "A mobile-friendly PayPal whack-a-mole prototype built with Next.js.",
+  description:
+    "A mobile-friendly PayPal whack-a-mole prototype built with Next.js.",
 };
 
 export default function RootLayout({

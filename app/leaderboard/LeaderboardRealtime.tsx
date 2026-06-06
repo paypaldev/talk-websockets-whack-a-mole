@@ -1,15 +1,15 @@
-'use client'
+"use client";
 
-import { type RealtimeChannel } from '@supabase/supabase-js'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
-import ReactCanvasConfetti from 'react-canvas-confetti'
-import { Toaster, toast } from 'sonner'
+import { type RealtimeChannel } from "@supabase/supabase-js";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import ReactCanvasConfetti from "react-canvas-confetti";
+import { Toaster, toast } from "sonner";
 import {
   assignConfettiLauncher,
   fireCelebrationConfetti,
   type ConfettiLauncher,
-} from '@/lib/confetti'
+} from "@/lib/confetti";
 import {
   GAME_RESULTS_LEADERBOARD_CHANNEL,
   LEADERBOARD_SWAG_ORDERS_CHANNEL,
@@ -21,71 +21,73 @@ import {
   SWAG_STORE_CHECKOUT_ENABLED_EVENT,
   SWAG_STORE_ENABLED_EVENT,
   getSupabaseBrowserClient,
-} from '@/lib/supabaseBrowser'
-import { PlayersCard } from './PlayersCard'
-import { RealtimeBadge, type RealtimeStatus } from './RealtimeBadge'
+} from "@/lib/supabaseBrowser";
+import { PlayersCard } from "./PlayersCard";
+import { RealtimeBadge, type RealtimeStatus } from "./RealtimeBadge";
 
 export interface PlayerResult {
-  id: string
-  name: string
-  hits: number
-  misses: number
+  id: string;
+  name: string;
+  hits: number;
+  misses: number;
 }
 
 interface PlayerTotals {
-  name: string
-  totalScore: number
-  totalMisses: number
-  gamesPlayed: number
+  name: string;
+  totalScore: number;
+  totalMisses: number;
+  gamesPlayed: number;
 }
 
 interface LeaderboardRealtimeProps {
-  initialRows: PlayerResult[]
+  initialRows: PlayerResult[];
 }
 
 interface GameResultRealtimeRow {
-  id: string
-  playerName: string
-  score: number
-  misses: number
+  id: string;
+  playerName: string;
+  score: number;
+  misses: number;
 }
 
 interface SwagOrderRealtimeRow {
-  id: string
-  status: string
-  playerName: string
+  id: string;
+  status: string;
+  playerName: string;
 }
 
-function isGameResultRealtimeRow(value: unknown): value is GameResultRealtimeRow {
-  if (!value || typeof value !== 'object') {
-    return false
+function isGameResultRealtimeRow(
+  value: unknown,
+): value is GameResultRealtimeRow {
+  if (!value || typeof value !== "object") {
+    return false;
   }
 
-  const candidate = value as Record<string, unknown>
+  const candidate = value as Record<string, unknown>;
   return (
-    typeof candidate.id === 'string' &&
-    typeof candidate.playerName === 'string' &&
-    typeof candidate.score === 'number' &&
-    typeof candidate.misses === 'number'
-  )
+    typeof candidate.id === "string" &&
+    typeof candidate.playerName === "string" &&
+    typeof candidate.score === "number" &&
+    typeof candidate.misses === "number"
+  );
 }
 
 function isSwagOrderRealtimeRow(value: unknown): value is SwagOrderRealtimeRow {
-  if (!value || typeof value !== 'object') {
-    return false
+  if (!value || typeof value !== "object") {
+    return false;
   }
 
-  const candidate = value as Record<string, unknown>
+  const candidate = value as Record<string, unknown>;
   return (
-    typeof candidate.id === 'string' &&
-    typeof candidate.status === 'string' &&
-    typeof candidate.playerName === 'string'
-  )
+    typeof candidate.id === "string" &&
+    typeof candidate.status === "string" &&
+    typeof candidate.playerName === "string"
+  );
 }
 
 function toPlayerResult(value: unknown): PlayerResult | null {
   if (!isGameResultRealtimeRow(value)) {
-    return null
+    return null;
   }
 
   return {
@@ -93,24 +95,32 @@ function toPlayerResult(value: unknown): PlayerResult | null {
     name: value.playerName,
     hits: value.score,
     misses: value.misses,
-  }
+  };
 }
 
-function upsertPlayerResult(currentRows: PlayerResult[], nextRow: PlayerResult): PlayerResult[] {
-  const existingIndex = currentRows.findIndex((row) => row.id === nextRow.id)
+function upsertPlayerResult(
+  currentRows: PlayerResult[],
+  nextRow: PlayerResult,
+): PlayerResult[] {
+  const existingIndex = currentRows.findIndex((row) => row.id === nextRow.id);
   if (existingIndex === -1) {
-    return [...currentRows, nextRow]
+    return [...currentRows, nextRow];
   }
 
-  const nextRows = [...currentRows]
-  nextRows[existingIndex] = nextRow
-  return nextRows
+  const nextRows = [...currentRows];
+  nextRows[existingIndex] = nextRow;
+  return nextRows;
 }
 
 function PendingOrderIcon() {
   return (
     <span className="inline-flex size-6 items-center justify-center rounded-full border border-amber-100 bg-amber-300 text-amber-950 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]">
-      <svg viewBox="0 0 24 24" className="size-3.5" fill="none" aria-hidden="true">
+      <svg
+        viewBox="0 0 24 24"
+        className="size-3.5"
+        fill="none"
+        aria-hidden="true"
+      >
         <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8" />
         <path
           d="M12 7.5V12L14.8 13.6"
@@ -121,13 +131,18 @@ function PendingOrderIcon() {
         />
       </svg>
     </span>
-  )
+  );
 }
 
 function PaidOrderIcon() {
   return (
     <span className="inline-flex size-6 items-center justify-center rounded-full border border-emerald-100 bg-emerald-300 text-emerald-950 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]">
-      <svg viewBox="0 0 24 24" className="size-3.5" fill="none" aria-hidden="true">
+      <svg
+        viewBox="0 0 24 24"
+        className="size-3.5"
+        fill="none"
+        aria-hidden="true"
+      >
         <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8" />
         <path
           d="M8.5 12.3L10.8 14.6L15.5 9.9"
@@ -138,43 +153,47 @@ function PaidOrderIcon() {
         />
       </svg>
     </span>
-  )
+  );
 }
 
 function PendingOrderDescription({ playerName }: { playerName: string }) {
   return (
     <span>
-      <span className="rounded bg-amber-300 px-1 py-0.5 font-bold text-amber-950">{playerName}</span>{' '}
+      <span className="rounded bg-amber-300 px-1 py-0.5 font-bold text-amber-950">
+        {playerName}
+      </span>{" "}
       started checkout
     </span>
-  )
+  );
 }
 
 function PaidOrderDescription({ playerName }: { playerName: string }) {
   return (
     <span>
-      <span className="rounded bg-emerald-300 px-1 py-0.5 font-bold text-emerald-950">{playerName}</span>{' '}
+      <span className="rounded bg-emerald-300 px-1 py-0.5 font-bold text-emerald-950">
+        {playerName}
+      </span>{" "}
       completed checkout
     </span>
-  )
+  );
 }
 
 function ratio(hits: number, misses: number): string {
-  const total = hits + misses
-  if (total === 0) return '0%'
-  return `${Math.round((hits / total) * 100)}%`
+  const total = hits + misses;
+  if (total === 0) return "0%";
+  return `${Math.round((hits / total) * 100)}%`;
 }
 
 function getPlayerTotals(rows: PlayerResult[]): PlayerTotals[] {
-  const totalsByPlayer = new Map<string, PlayerTotals>()
+  const totalsByPlayer = new Map<string, PlayerTotals>();
 
   for (const row of rows) {
-    const existingTotals = totalsByPlayer.get(row.name)
+    const existingTotals = totalsByPlayer.get(row.name);
     if (existingTotals) {
-      existingTotals.totalScore += row.hits
-      existingTotals.totalMisses += row.misses
-      existingTotals.gamesPlayed += 1
-      continue
+      existingTotals.totalScore += row.hits;
+      existingTotals.totalMisses += row.misses;
+      existingTotals.gamesPlayed += 1;
+      continue;
     }
 
     totalsByPlayer.set(row.name, {
@@ -182,10 +201,10 @@ function getPlayerTotals(rows: PlayerResult[]): PlayerTotals[] {
       totalScore: row.hits,
       totalMisses: row.misses,
       gamesPlayed: 1,
-    })
+    });
   }
 
-  return [...totalsByPlayer.values()]
+  return [...totalsByPlayer.values()];
 }
 
 function RankBadge({ rank }: { rank: number }) {
@@ -194,27 +213,27 @@ function RankBadge({ rank }: { rank: number }) {
       <span className="grid size-7 place-items-center rounded-full border border-amber-300/40 bg-amber-400/15 text-xs font-semibold text-amber-200">
         1
       </span>
-    )
+    );
   }
   if (rank === 2) {
     return (
       <span className="grid size-7 place-items-center rounded-full border border-slate-300/40 bg-slate-300/10 text-xs font-semibold text-slate-200">
         2
       </span>
-    )
+    );
   }
   if (rank === 3) {
     return (
       <span className="grid size-7 place-items-center rounded-full border border-orange-300/40 bg-orange-400/10 text-xs font-semibold text-orange-200">
         3
       </span>
-    )
+    );
   }
   return (
     <span className="grid size-7 place-items-center rounded-full border border-white/10 bg-white/3 text-xs font-medium text-zinc-300 tabular-nums">
       {rank}
     </span>
-  )
+  );
 }
 
 function LeaderboardTable({
@@ -224,19 +243,23 @@ function LeaderboardTable({
   highlightColumn,
   realtimeStatus,
 }: {
-  title: string
-  subtitle: string
-  rows: PlayerResult[]
-  highlightColumn: 'hits' | 'misses'
-  realtimeStatus: RealtimeStatus
+  title: string;
+  subtitle: string;
+  rows: PlayerResult[];
+  highlightColumn: "hits" | "misses";
+  realtimeStatus: RealtimeStatus;
 }) {
   return (
     <section className="w-full overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70 backdrop-blur-sm">
       <div className="border-b border-white/10 px-6 py-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-zinc-50">{title}</h2>
-            <p className="mt-1 text-xs uppercase tracking-[0.22em] text-zinc-400">{subtitle}</p>
+            <h2 className="text-lg font-semibold tracking-tight text-zinc-50">
+              {title}
+            </h2>
+            <p className="mt-1 text-xs uppercase tracking-[0.22em] text-zinc-400">
+              {subtitle}
+            </p>
           </div>
           <RealtimeBadge status={realtimeStatus} />
         </div>
@@ -244,17 +267,23 @@ function LeaderboardTable({
 
       <div className="grid grid-cols-[auto_minmax(7rem,1fr)_repeat(3,minmax(0,3.75rem))] gap-x-2 bg-zinc-900/70 px-5 py-2.5">
         <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-500" />
-        <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">Player</span>
-        <span className="text-right text-[10px] uppercase tracking-[0.18em] text-zinc-500">Hits</span>
+        <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+          Player
+        </span>
+        <span className="text-right text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+          Hits
+        </span>
         <span className="text-right text-[10px] uppercase tracking-[0.18em] text-zinc-500">
           Misses
         </span>
-        <span className="text-right text-[10px] uppercase tracking-[0.18em] text-zinc-500">Ratio</span>
+        <span className="text-right text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+          Ratio
+        </span>
       </div>
 
       <div className="divide-y divide-white/5 bg-zinc-950/50">
         {rows.map((player, i) => {
-          const topThree = i < 3
+          const topThree = i < 3;
           return (
             <div
               key={player.id}
@@ -264,20 +293,24 @@ function LeaderboardTable({
                 <RankBadge rank={i + 1} />
               </div>
               <span
-                className={`truncate text-sm ${topThree ? 'font-medium text-zinc-100' : 'text-zinc-300'}`}
+                className={`truncate text-sm ${topThree ? "font-medium text-zinc-100" : "text-zinc-300"}`}
               >
                 {player.name}
               </span>
               <span
                 className={`text-right text-sm font-semibold tabular-nums ${
-                  highlightColumn === 'hits' ? 'text-emerald-300' : 'text-zinc-300'
+                  highlightColumn === "hits"
+                    ? "text-emerald-300"
+                    : "text-zinc-300"
                 }`}
               >
                 {player.hits}
               </span>
               <span
                 className={`text-right text-sm font-semibold tabular-nums ${
-                  highlightColumn === 'misses' ? 'text-rose-300' : 'text-zinc-300'
+                  highlightColumn === "misses"
+                    ? "text-rose-300"
+                    : "text-zinc-300"
                 }`}
               >
                 {player.misses}
@@ -286,11 +319,11 @@ function LeaderboardTable({
                 {ratio(player.hits, player.misses)}
               </span>
             </div>
-          )
+          );
         })}
       </div>
     </section>
-  )
+  );
 }
 
 function TotalsTable({
@@ -299,18 +332,22 @@ function TotalsTable({
   rows,
   realtimeStatus,
 }: {
-  title: string
-  subtitle: string
-  rows: PlayerTotals[]
-  realtimeStatus: RealtimeStatus
+  title: string;
+  subtitle: string;
+  rows: PlayerTotals[];
+  realtimeStatus: RealtimeStatus;
 }) {
   return (
     <section className="w-full overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70 backdrop-blur-sm">
       <div className="border-b border-white/10 px-6 py-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-zinc-50">{title}</h2>
-            <p className="mt-1 text-xs uppercase tracking-[0.22em] text-zinc-400">{subtitle}</p>
+            <h2 className="text-lg font-semibold tracking-tight text-zinc-50">
+              {title}
+            </h2>
+            <p className="mt-1 text-xs uppercase tracking-[0.22em] text-zinc-400">
+              {subtitle}
+            </p>
           </div>
           <RealtimeBadge status={realtimeStatus} />
         </div>
@@ -318,19 +355,23 @@ function TotalsTable({
 
       <div className="grid grid-cols-[auto_minmax(7rem,1fr)_repeat(3,minmax(0,4.25rem))] gap-x-2 bg-zinc-900/70 px-5 py-2.5">
         <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-500" />
-        <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">Player</span>
+        <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+          Player
+        </span>
         <span className="text-right text-[10px] uppercase tracking-[0.18em] text-zinc-500">
           Total Score
         </span>
         <span className="text-right text-[10px] uppercase tracking-[0.18em] text-zinc-500">
           Total Misses
         </span>
-        <span className="text-right text-[10px] uppercase tracking-[0.18em] text-zinc-500">Games</span>
+        <span className="text-right text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+          Games
+        </span>
       </div>
 
       <div className="divide-y divide-white/5 bg-zinc-950/50">
         {rows.map((player, i) => {
-          const topThree = i < 3
+          const topThree = i < 3;
           return (
             <div
               key={player.name}
@@ -340,7 +381,7 @@ function TotalsTable({
                 <RankBadge rank={i + 1} />
               </div>
               <span
-                className={`truncate text-sm ${topThree ? 'font-medium text-zinc-100' : 'text-zinc-300'}`}
+                className={`truncate text-sm ${topThree ? "font-medium text-zinc-100" : "text-zinc-300"}`}
               >
                 {player.name}
               </span>
@@ -354,116 +395,124 @@ function TotalsTable({
                 {player.gamesPlayed}
               </span>
             </div>
-          )
+          );
         })}
       </div>
     </section>
-  )
+  );
 }
 
 export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
-  const [rows, setRows] = useState<PlayerResult[]>(initialRows)
-  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>('connecting')
-  const [hasSwagBeenClicked, setHasSwagBeenClicked] = useState(false)
-  const [hasCelebrationBeenClicked, setHasCelebrationBeenClicked] = useState(false)
-  const [isSwagCheckoutEnabled, setIsSwagCheckoutEnabled] = useState(true)
-  const [swagChannelReady, setSwagChannelReady] = useState(false)
-  const swagChannelRef = useRef<RealtimeChannel | null>(null)
-  const confettiRef = useRef<ConfettiLauncher | null>(null)
-  const swagAnimationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const celebrationAnimationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [rows, setRows] = useState<PlayerResult[]>(initialRows);
+  const [realtimeStatus, setRealtimeStatus] =
+    useState<RealtimeStatus>("connecting");
+  const [hasSwagBeenClicked, setHasSwagBeenClicked] = useState(false);
+  const [hasCelebrationBeenClicked, setHasCelebrationBeenClicked] =
+    useState(false);
+  const [isSwagCheckoutEnabled, setIsSwagCheckoutEnabled] = useState(true);
+  const [swagChannelReady, setSwagChannelReady] = useState(false);
+  const swagChannelRef = useRef<RealtimeChannel | null>(null);
+  const confettiRef = useRef<ConfettiLauncher | null>(null);
+  const swagAnimationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const celebrationAnimationTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   const handleSwagClick = async () => {
-    setHasSwagBeenClicked(true)
+    setHasSwagBeenClicked(true);
 
     if (swagAnimationTimeoutRef.current) {
-      clearTimeout(swagAnimationTimeoutRef.current)
+      clearTimeout(swagAnimationTimeoutRef.current);
     }
 
     swagAnimationTimeoutRef.current = setTimeout(() => {
-      setHasSwagBeenClicked(false)
-      swagAnimationTimeoutRef.current = null
-    }, 5000)
+      setHasSwagBeenClicked(false);
+      swagAnimationTimeoutRef.current = null;
+    }, 5000);
 
     if (!swagChannelReady || !swagChannelRef.current) {
-      return
+      return;
     }
 
     await swagChannelRef.current.send({
-      type: 'broadcast',
+      type: "broadcast",
       event: SWAG_STORE_ENABLED_EVENT,
       payload: {
         showSwagStore: true,
       } satisfies SwagStoreBroadcastPayload,
-    })
-  }
+    });
+  };
 
   const handleSwagCheckoutToggle = async () => {
-    const nextEnabled = !isSwagCheckoutEnabled
-    setIsSwagCheckoutEnabled(nextEnabled)
+    const nextEnabled = !isSwagCheckoutEnabled;
+    setIsSwagCheckoutEnabled(nextEnabled);
 
     if (!swagChannelReady || !swagChannelRef.current) {
-      return
+      return;
     }
 
     await swagChannelRef.current.send({
-      type: 'broadcast',
+      type: "broadcast",
       event: SWAG_STORE_CHECKOUT_ENABLED_EVENT,
       payload: {
         enabled: nextEnabled,
       } satisfies SwagCheckoutBroadcastPayload,
-    })
-  }
+    });
+  };
 
   const handleSwagCelebrationClick = async () => {
-    setHasCelebrationBeenClicked(true)
+    setHasCelebrationBeenClicked(true);
 
     if (celebrationAnimationTimeoutRef.current) {
-      clearTimeout(celebrationAnimationTimeoutRef.current)
+      clearTimeout(celebrationAnimationTimeoutRef.current);
     }
 
     celebrationAnimationTimeoutRef.current = setTimeout(() => {
-      setHasCelebrationBeenClicked(false)
-      celebrationAnimationTimeoutRef.current = null
-    }, 3000)
+      setHasCelebrationBeenClicked(false);
+      celebrationAnimationTimeoutRef.current = null;
+    }, 3000);
 
     if (!swagChannelReady || !swagChannelRef.current) {
-      return
+      return;
     }
 
     await swagChannelRef.current.send({
-      type: 'broadcast',
+      type: "broadcast",
       event: SWAG_STORE_CELEBRATION_EVENT,
       payload: {
         launchedAt: Date.now(),
       } satisfies SwagCelebrationBroadcastPayload,
-    })
-  }
+    });
+  };
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient()
+    const supabase = getSupabaseBrowserClient();
     if (!supabase) {
-      return
+      return;
     }
 
-    let isMounted = true
+    let isMounted = true;
 
-    const resultsChannel = supabase.channel(GAME_RESULTS_LEADERBOARD_CHANNEL)
-    const swagChannel = (swagChannelRef.current = supabase.channel(LEADERBOARD_SWAG_CHANNEL))
-    const swagOrdersChannel = supabase.channel(LEADERBOARD_SWAG_ORDERS_CHANNEL)
+    const resultsChannel = supabase.channel(GAME_RESULTS_LEADERBOARD_CHANNEL);
+    const swagChannel = (swagChannelRef.current = supabase.channel(
+      LEADERBOARD_SWAG_CHANNEL,
+    ));
+    const swagOrdersChannel = supabase.channel(LEADERBOARD_SWAG_ORDERS_CHANNEL);
 
     const syncRows = async () => {
       const { data, error } = await supabase
-        .from('game_results')
-        .select('id, playerName, score, misses')
+        .from("game_results")
+        .select("id, playerName, score, misses");
 
       if (error || !isMounted || !Array.isArray(data)) {
-        return
+        return;
       }
 
       const realtimeRows: PlayerResult[] = data.flatMap((value) => {
         if (!isGameResultRealtimeRow(value)) {
-          return []
+          return [];
         }
 
         return [
@@ -473,148 +522,181 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
             hits: value.score,
             misses: value.misses,
           },
-        ]
-      })
+        ];
+      });
 
-      setRows(realtimeRows)
-    }
+      setRows(realtimeRows);
+    };
 
-    const statusesToResync = ['SUBSCRIBED', 'TIMED_OUT', 'CHANNEL_ERROR', 'CLOSED'] as const
+    const statusesToResync = [
+      "SUBSCRIBED",
+      "TIMED_OUT",
+      "CHANNEL_ERROR",
+      "CLOSED",
+    ] as const;
     resultsChannel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'game_results' }, (payload) => {
-        const nextRow = toPlayerResult(payload.new)
-        if (!nextRow) {
-          return
-        }
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "game_results" },
+        (payload) => {
+          const nextRow = toPlayerResult(payload.new);
+          if (!nextRow) {
+            return;
+          }
 
-        setRows((currentRows) => upsertPlayerResult(currentRows, nextRow))
-      })
+          setRows((currentRows) => upsertPlayerResult(currentRows, nextRow));
+        },
+      )
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          setRealtimeStatus('live')
-        } else if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-          setRealtimeStatus('offline')
+        if (status === "SUBSCRIBED") {
+          setRealtimeStatus("live");
+        } else if (
+          status === "TIMED_OUT" ||
+          status === "CHANNEL_ERROR" ||
+          status === "CLOSED"
+        ) {
+          setRealtimeStatus("offline");
         } else {
-          setRealtimeStatus('connecting')
+          setRealtimeStatus("connecting");
         }
 
         if (statusesToResync.includes(status)) {
-          void syncRows()
+          void syncRows();
         }
-      })
+      });
 
     swagChannel.subscribe((status) => {
-        setSwagChannelReady(status === 'SUBSCRIBED')
-      })
+      setSwagChannelReady(status === "SUBSCRIBED");
+    });
 
     swagOrdersChannel
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'swag_orders' }, (payload) => {
-        if (!isSwagOrderRealtimeRow(payload.new)) {
-          return
-        }
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "swag_orders" },
+        (payload) => {
+          if (!isSwagOrderRealtimeRow(payload.new)) {
+            return;
+          }
 
-        if (payload.new.status === 'pending') {
-          toast('New order pending', {
-            description: <PendingOrderDescription playerName={payload.new.playerName} />,
-            duration: 9000,
-            icon: <PendingOrderIcon />,
-          })
-        }
+          if (payload.new.status === "pending") {
+            toast("New order pending", {
+              description: (
+                <PendingOrderDescription playerName={payload.new.playerName} />
+              ),
+              duration: 9000,
+              icon: <PendingOrderIcon />,
+            });
+          }
 
-        if (payload.new.status === 'paid') {
-          toast.success('Order paid', {
-            description: <PaidOrderDescription playerName={payload.new.playerName} />,
-            duration: 9000,
-            icon: <PaidOrderIcon />,
-          })
-          fireCelebrationConfetti(confettiRef.current)
-        }
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'swag_orders' }, (payload) => {
-        const previousRow = isSwagOrderRealtimeRow(payload.old) ? payload.old : null
-        const nextRow = isSwagOrderRealtimeRow(payload.new) ? payload.new : null
+          if (payload.new.status === "paid") {
+            toast.success("Order paid", {
+              description: (
+                <PaidOrderDescription playerName={payload.new.playerName} />
+              ),
+              duration: 9000,
+              icon: <PaidOrderIcon />,
+            });
+            fireCelebrationConfetti(confettiRef.current);
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "swag_orders" },
+        (payload) => {
+          const previousRow = isSwagOrderRealtimeRow(payload.old)
+            ? payload.old
+            : null;
+          const nextRow = isSwagOrderRealtimeRow(payload.new)
+            ? payload.new
+            : null;
 
-        if (!nextRow) {
-          return
-        }
+          if (!nextRow) {
+            return;
+          }
 
-        const previousStatus = previousRow?.status
+          const previousStatus = previousRow?.status;
 
-        if (nextRow.status === 'pending' && previousStatus !== 'pending') {
-          toast('New order pending', {
-            description: <PendingOrderDescription playerName={nextRow.playerName} />,
-            duration: 9000,
-            icon: <PendingOrderIcon />,
-          })
-        }
+          if (nextRow.status === "pending" && previousStatus !== "pending") {
+            toast("New order pending", {
+              description: (
+                <PendingOrderDescription playerName={nextRow.playerName} />
+              ),
+              duration: 9000,
+              icon: <PendingOrderIcon />,
+            });
+          }
 
-        if (nextRow.status === 'paid' && previousStatus !== 'paid') {
-          toast.success('Order paid', {
-            description: <PaidOrderDescription playerName={nextRow.playerName} />,
-            duration: 9000,
-            icon: <PaidOrderIcon />,
-          })
-          fireCelebrationConfetti(confettiRef.current)
-        }
-      })
-      .subscribe()
+          if (nextRow.status === "paid" && previousStatus !== "paid") {
+            toast.success("Order paid", {
+              description: (
+                <PaidOrderDescription playerName={nextRow.playerName} />
+              ),
+              duration: 9000,
+              icon: <PaidOrderIcon />,
+            });
+            fireCelebrationConfetti(confettiRef.current);
+          }
+        },
+      )
+      .subscribe();
 
     return () => {
-      isMounted = false
-      setRealtimeStatus('offline')
-      setSwagChannelReady(false)
+      isMounted = false;
+      setRealtimeStatus("offline");
+      setSwagChannelReady(false);
       if (swagAnimationTimeoutRef.current) {
-        clearTimeout(swagAnimationTimeoutRef.current)
+        clearTimeout(swagAnimationTimeoutRef.current);
       }
       if (celebrationAnimationTimeoutRef.current) {
-        clearTimeout(celebrationAnimationTimeoutRef.current)
+        clearTimeout(celebrationAnimationTimeoutRef.current);
       }
-      swagChannelRef.current = null
-      void resultsChannel.unsubscribe()
-      void swagChannel.unsubscribe()
-      void swagOrdersChannel.unsubscribe()
-    }
-  }, [])
+      swagChannelRef.current = null;
+      void resultsChannel.unsubscribe();
+      void swagChannel.unsubscribe();
+      void swagOrdersChannel.unsubscribe();
+    };
+  }, []);
 
   const playerTotals = useMemo(() => {
-    return getPlayerTotals(rows)
-  }, [rows])
+    return getPlayerTotals(rows);
+  }, [rows]);
 
   const byHits = useMemo(() => {
-    return [...rows].sort((a, b) => b.hits - a.hits)
-  }, [rows])
+    return [...rows].sort((a, b) => b.hits - a.hits);
+  }, [rows]);
 
   const byMisses = useMemo(() => {
-    return [...rows].sort((a, b) => b.misses - a.misses)
-  }, [rows])
+    return [...rows].sort((a, b) => b.misses - a.misses);
+  }, [rows]);
 
   const byTotalGames = useMemo(() => {
     return [...playerTotals].sort((a, b) => {
       if (b.gamesPlayed !== a.gamesPlayed) {
-        return b.gamesPlayed - a.gamesPlayed
+        return b.gamesPlayed - a.gamesPlayed;
       }
 
-      return b.totalScore - a.totalScore
-    })
-  }, [playerTotals])
+      return b.totalScore - a.totalScore;
+    });
+  }, [playerTotals]);
 
-  const uniquePlayers = playerTotals.length
-  const totalGamesPlayed = rows.length
+  const uniquePlayers = playerTotals.length;
+  const totalGamesPlayed = rows.length;
   const mostHitsPlayer = useMemo(() => {
-    return [...playerTotals].sort((a, b) => b.totalScore - a.totalScore)[0]
-  }, [playerTotals])
+    return [...playerTotals].sort((a, b) => b.totalScore - a.totalScore)[0];
+  }, [playerTotals]);
   const mostMissesPlayer = useMemo(() => {
-    return [...playerTotals].sort((a, b) => b.totalMisses - a.totalMisses)[0]
-  }, [playerTotals])
+    return [...playerTotals].sort((a, b) => b.totalMisses - a.totalMisses)[0];
+  }, [playerTotals]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0a0a0a] px-4 py-10 text-zinc-100 sm:px-6 lg:px-8">
       <ReactCanvasConfetti
         className="pointer-events-none fixed inset-0 z-40"
-        style={{ width: '100vw', height: '100vh' }}
+        style={{ width: "100vw", height: "100vh" }}
         globalOptions={{ resize: true, useWorker: true }}
         onInit={({ confetti }) => {
-          assignConfettiLauncher(confettiRef, confetti)
+          assignConfettiLauncher(confettiRef, confetti);
         }}
       />
 
@@ -624,7 +706,7 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
         closeButton
         toastOptions={{
           className:
-            'rounded-xl border-2 border-white/60 bg-zinc-900 text-white shadow-[0_18px_40px_rgba(0,0,0,0.65)] backdrop-blur-md',
+            "rounded-xl border-2 border-white/60 bg-zinc-900 text-white shadow-[0_18px_40px_rgba(0,0,0,0.65)] backdrop-blur-md",
           duration: 9000,
         }}
       />
@@ -642,12 +724,12 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
               <button
                 type="button"
                 onClick={() => {
-                  void handleSwagClick()
+                  void handleSwagClick();
                 }}
                 className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] transition-colors ${
                   hasSwagBeenClicked
-                    ? 'animate-pulse border-emerald-300/45 bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/25'
-                    : 'border-white/15 bg-white/5 text-zinc-200 hover:bg-white/10'
+                    ? "animate-pulse border-emerald-300/45 bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/25"
+                    : "border-white/15 bg-white/5 text-zinc-200 hover:bg-white/10"
                 }`}
               >
                 Swag
@@ -656,12 +738,12 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
               <button
                 type="button"
                 onClick={() => {
-                  void handleSwagCelebrationClick()
+                  void handleSwagCelebrationClick();
                 }}
                 className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] transition-colors ${
                   hasCelebrationBeenClicked
-                    ? 'animate-pulse border-sky-300/45 bg-sky-400/15 text-sky-200 hover:bg-sky-400/25'
-                    : 'border-white/15 bg-white/5 text-zinc-200 hover:bg-white/10'
+                    ? "animate-pulse border-sky-300/45 bg-sky-400/15 text-sky-200 hover:bg-sky-400/25"
+                    : "border-white/15 bg-white/5 text-zinc-200 hover:bg-white/10"
                 }`}
               >
                 Celebrate
@@ -670,15 +752,15 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
               <button
                 type="button"
                 onClick={() => {
-                  void handleSwagCheckoutToggle()
+                  void handleSwagCheckoutToggle();
                 }}
                 className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] transition-colors ${
                   isSwagCheckoutEnabled
-                    ? 'border-emerald-300/45 bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/25'
-                    : 'border-rose-300/45 bg-rose-400/10 text-rose-200 hover:bg-rose-400/20'
+                    ? "border-emerald-300/45 bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/25"
+                    : "border-rose-300/45 bg-rose-400/10 text-rose-200 hover:bg-rose-400/20"
                 }`}
               >
-                {isSwagCheckoutEnabled ? 'Enabled' : 'Disabled'}
+                {isSwagCheckoutEnabled ? "Enabled" : "Disabled"}
               </button>
 
               <Link
@@ -696,7 +778,8 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
                 Leaderboard
               </h1>
               <p className="mt-2 max-w-xl text-sm text-zinc-400 sm:text-base">
-                A clean snapshot of top whackers, accuracy, and who needs another run.
+                A clean snapshot of top whackers, accuracy, and who needs
+                another run.
               </p>
             </div>
           </div>
@@ -710,13 +793,18 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
           />
           <div className="rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3">
             <div className="flex items-start justify-between gap-3">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Most Hits</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                Most Hits
+              </p>
               <RealtimeBadge status={realtimeStatus} />
             </div>
             <p className="mt-1 text-xl font-semibold text-zinc-50">
               {mostHitsPlayer ? (
                 <>
-                  {mostHitsPlayer.name} <span className="text-zinc-400">({mostHitsPlayer.totalScore})</span>
+                  {mostHitsPlayer.name}{" "}
+                  <span className="text-zinc-400">
+                    ({mostHitsPlayer.totalScore})
+                  </span>
                 </>
               ) : (
                 <span className="text-zinc-400">No games yet</span>
@@ -725,14 +813,18 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
           </div>
           <div className="rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3">
             <div className="flex items-start justify-between gap-3">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Most Misses</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                Most Misses
+              </p>
               <RealtimeBadge status={realtimeStatus} />
             </div>
             <p className="mt-1 text-xl font-semibold text-zinc-50">
               {mostMissesPlayer ? (
                 <>
-                  {mostMissesPlayer.name}{' '}
-                  <span className="text-zinc-400">({mostMissesPlayer.totalMisses})</span>
+                  {mostMissesPlayer.name}{" "}
+                  <span className="text-zinc-400">
+                    ({mostMissesPlayer.totalMisses})
+                  </span>
                 </>
               ) : (
                 <span className="text-zinc-400">No games yet</span>
@@ -767,5 +859,5 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
         </div>
       </div>
     </main>
-  )
+  );
 }

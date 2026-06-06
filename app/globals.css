@@ -5,12 +5,12 @@
   --foreground: #171717;
 
   /* PayPal official brand palette */
-  --pp-navy:      #001C64;
-  --pp-blue:      #003087;
-  --pp-sky:       #0070BA;
-  --pp-cerulean:  #009CDE;
-  --pp-gold:      #FFC439;
-  --pp-gold-dark: #E5A800;
+  --pp-navy: #001c64;
+  --pp-blue: #003087;
+  --pp-sky: #0070ba;
+  --pp-cerulean: #009cde;
+  --pp-gold: #ffc439;
+  --pp-gold-dark: #e5a800;
 }
 
 @theme inline {
@@ -19,11 +19,11 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  --color-pp-navy:      var(--pp-navy);
-  --color-pp-blue:      var(--pp-blue);
-  --color-pp-sky:       var(--pp-sky);
-  --color-pp-cerulean:  var(--pp-cerulean);
-  --color-pp-gold:      var(--pp-gold);
+  --color-pp-navy: var(--pp-navy);
+  --color-pp-blue: var(--pp-blue);
+  --color-pp-sky: var(--pp-sky);
+  --color-pp-cerulean: var(--pp-cerulean);
+  --color-pp-gold: var(--pp-gold);
   --color-pp-gold-dark: var(--pp-gold-dark);
 }
 
@@ -34,13 +34,29 @@ body {
 }
 
 @keyframes mole-appear {
-  0%   { transform: scale(0) rotate(-10deg); opacity: 0.4; }
-  75%  { transform: scale(1.12) rotate(4deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  0% {
+    transform: scale(0) rotate(-10deg);
+    opacity: 0.4;
+  }
+  75% {
+    transform: scale(1.12) rotate(4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
 }
 
 @keyframes score-pop {
-  0%   { transform: scale(1); }
-  40%  { transform: scale(1.45); color: #0070BA; }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.45);
+    color: #0070ba;
+  }
+  100% {
+    transform: scale(1);
+  }
 }

@@ -1,5 +1,5 @@
-import Image from 'next/image'
-import Link from 'next/link'
+import Image from "next/image";
+import Link from "next/link";
 
 export default function QrCodePage() {
   return (
@@ -22,7 +22,9 @@ export default function QrCodePage() {
           </div>
 
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">QR Code</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">
+              QR Code
+            </h1>
             <p className="mt-2 max-w-xl text-sm text-zinc-400 sm:text-base">
               Scan this code to open the Whack-a-Mole experience on your phone.
             </p>
@@ -43,5 +45,5 @@ export default function QrCodePage() {
         </section>
       </div>
     </main>
-  )
+  );
 }
