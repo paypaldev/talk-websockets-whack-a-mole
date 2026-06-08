@@ -17,15 +17,15 @@ export const swagCatalog: ReadonlyArray<SwagCatalogItem> = [
     amountCents: 1999,
     currency: "USD",
   },
-  {
-    id: "paypal-swag-hoodie",
-    title: "PayPal Hoodie",
-    description:
-      "A comfortable hoodie featuring PayPal's branding and colors, perfect for casual wear.",
-    imageSrc: "/paypal-swag2.png",
-    amountCents: 4999,
-    currency: "USD",
-  },
+  // {
+  //   id: "paypal-swag-hoodie",
+  //   title: "PayPal Hoodie",
+  //   description:
+  //     "A comfortable hoodie featuring PayPal's branding and colors, perfect for casual wear.",
+  //   imageSrc: "/paypal-swag2.png",
+  //   amountCents: 4999,
+  //   currency: "USD",
+  // },
   {
     id: "paypal-swag-cap",
     title: "PayPal Cap",

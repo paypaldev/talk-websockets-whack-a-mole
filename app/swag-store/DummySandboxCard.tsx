@@ -59,12 +59,71 @@ export function DummySandboxCard() {
   const [selectedCardIndex, setSelectedCardIndex] = useState<number>(() =>
     getRandomCardIndex(),
   );
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const selectedCard =
     SANDBOX_TEST_CARDS[selectedCardIndex] ?? SANDBOX_TEST_CARDS[0];
 
   const refreshDummyCard = () => {
     setSelectedCardIndex((currentIndex) => getRandomCardIndex(currentIndex));
+    setCopiedField(null);
+  };
+
+  const copyToClipboard = async (field: string, value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(field);
+      setTimeout(() => {
+        setCopiedField((currentField) =>
+          currentField === field ? null : currentField,
+        );
+      }, 1400);
+    } catch {
+      setCopiedField(null);
+    }
+  };
+
+  const renderCopyButton = (field: string, value: string) => {
+    const isCopied = copiedField === field;
+
+    return (
+      <button
+        type="button"
+        onClick={() => void copyToClipboard(field, value)}
+        aria-label={`Copy ${field}`}
+        title={isCopied ? `${field} copied` : `Copy ${field}`}
+        className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-white/30 bg-white/10 text-white/90 transition hover:bg-white/20"
+      >
+        {isCopied ? (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-3.5 w-3.5"
+            aria-hidden="true"
+          >
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        ) : (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-3.5 w-3.5"
+            aria-hidden="true"
+          >
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+        )}
+      </button>
+    );
   };
 
   return (
@@ -106,22 +165,33 @@ export function DummySandboxCard() {
         </span>
       </div>
 
-      <p className="mt-6 text-2xl font-semibold tracking-[0.08em] text-white">
-        {selectedCard.number}
-      </p>
+      <div className="mt-6 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <p className="text-2xl font-semibold tracking-[0.08em] text-white">
+            {selectedCard.number}
+          </p>
+          {renderCopyButton("number", selectedCard.number)}
+        </div>
+      </div>
 
       <div className="mt-5 grid grid-cols-2 gap-4 text-sm">
         <div>
           <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-200/80">
             CVV
           </p>
-          <p className="mt-1 font-semibold text-white">{selectedCard.cvv}</p>
+          <div className="mt-1 flex items-center gap-2">
+            <p className="font-semibold text-white">{selectedCard.cvv}</p>
+            {renderCopyButton("cvv", selectedCard.cvv)}
+          </div>
         </div>
         <div>
           <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-200/80">
             Expiry
           </p>
-          <p className="mt-1 font-semibold text-white">{selectedCard.expiry}</p>
+          <div className="mt-1 flex items-center gap-2">
+            <p className="font-semibold text-white">{selectedCard.expiry}</p>
+            {renderCopyButton("expiry", selectedCard.expiry)}
+          </div>
         </div>
       </div>
 
@@ -129,7 +199,10 @@ export function DummySandboxCard() {
         <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-200/80">
           Address
         </p>
-        <p className="mt-1 font-semibold text-white">{selectedCard.address}</p>
+        <div className="mt-1 flex items-start gap-2">
+          <p className="font-semibold text-white">{selectedCard.address}</p>
+          {renderCopyButton("address", selectedCard.address)}
+        </div>
       </div>
     </div>
   );
