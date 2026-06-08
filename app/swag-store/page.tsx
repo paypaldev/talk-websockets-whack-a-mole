@@ -267,7 +267,7 @@ function SwagStoreContent({ playerName }: SwagStoreContentProps) {
                     onApprove={(data) => onApprove(data, item.id)}
                     onCancel={(data) => console.log("Cancelled:", data)}
                     onError={(error) => console.error("Error:", error)}
-                    presentationMode="auto"
+                    presentationMode="popup"
                     type="checkout"
                     disabled={
                       !isPayPalButtonEnabled || highlightedItemId !== null
