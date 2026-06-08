@@ -604,9 +604,6 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "swag_orders" },
         (payload) => {
-          const previousRow = isSwagOrderRealtimeRow(payload.old)
-            ? payload.old
-            : null;
           const nextRow = isSwagOrderRealtimeRow(payload.new)
             ? payload.new
             : null;
@@ -615,19 +612,7 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
             return;
           }
 
-          const previousStatus = previousRow?.status;
-
-          if (nextRow.status === "pending" && previousStatus !== "pending") {
-            toast("New order pending", {
-              description: (
-                <PendingOrderDescription playerName={nextRow.playerName} />
-              ),
-              duration: 9000,
-              icon: <PendingOrderIcon />,
-            });
-          }
-
-          if (nextRow.status === "paid" && previousStatus !== "paid") {
+          if (nextRow.status === "paid") {
             toast.success("Order paid", {
               description: (
                 <PaidOrderDescription playerName={nextRow.playerName} />
