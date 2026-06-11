@@ -45,6 +45,19 @@ export async function startGameSessionAction(
     }
   }
 
+  const windowStart = new Date(
+    Date.now() - antiCheatConfig.sessionRateLimitWindowMs,
+  );
+  const recentSessionCount = await prisma.gameSession.count({
+    where: {
+      playerName,
+      createdAt: { gte: windowStart },
+    },
+  });
+  if (recentSessionCount >= antiCheatConfig.maxSessionsPerWindow) {
+    throw new Error("Too many games started recently. Please wait a moment.");
+  }
+
   const sessionToken = createSessionToken();
   const expiresAt = new Date(Date.now() + antiCheatConfig.sessionTtlMs);
 

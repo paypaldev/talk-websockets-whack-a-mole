@@ -25,6 +25,7 @@ interface ValidatedSaveGameResultInput {
 function validateInput(
   input: SaveGameResultInput,
   antiCheatEnabled: boolean,
+  maxScorePerGame: number,
 ): ValidatedSaveGameResultInput {
   const sessionId = input.sessionId?.trim() ?? "";
   const sessionToken = input.sessionToken?.trim() ?? "";
@@ -50,6 +51,10 @@ function validateInput(
 
   if (!Number.isInteger(input.score) || input.score < 0) {
     throw new Error("score must be a non-negative integer.");
+  }
+
+  if (input.score > maxScorePerGame) {
+    throw new Error("Score exceeds the maximum possible for a single game.");
   }
 
   if (!Number.isInteger(input.misses) || input.misses < 0) {
@@ -82,7 +87,12 @@ function areHashesEqual(expectedHex: string, providedHex: string): boolean {
 
 export async function saveGameResultAction(input: SaveGameResultInput) {
   const antiCheatConfig = getAntiCheatConfig();
-  const validated = validateInput(input, antiCheatConfig.enabled);
+  const validated = validateInput(input, antiCheatConfig.enabled, antiCheatConfig.maxScorePerGame);
+
+  const autoDisqualified =
+    antiCheatConfig.disqualifyZeroMisses &&
+    validated.misses === 0 &&
+    validated.score > 0;
 
   if (!antiCheatConfig.enabled) {
     const createdResult = await prisma.gameResult.create({
@@ -90,6 +100,7 @@ export async function saveGameResultAction(input: SaveGameResultInput) {
         playerName: validated.playerName,
         score: validated.score,
         misses: validated.misses,
+        disqualified: autoDisqualified,
       },
       select: {
         id: true,
@@ -167,6 +178,7 @@ export async function saveGameResultAction(input: SaveGameResultInput) {
         playerName: validated.playerName,
         score: validated.score,
         misses: validated.misses,
+        disqualified: autoDisqualified,
       },
       select: {
         id: true,
