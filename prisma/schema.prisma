@@ -7,11 +7,12 @@ datasource db {
 }
 
 model GameResult {
-    id         String   @id @default(cuid())
-    playerName String   @db.VarChar(80)
-    score      Int
-    misses     Int
-    createdAt  DateTime @default(now())
+    id           String   @id @default(cuid())
+    playerName   String   @db.VarChar(80)
+    score        Int
+    misses       Int
+    disqualified Boolean  @default(false)
+    createdAt    DateTime @default(now())
 
     @@index([createdAt])
     @@map("game_results")

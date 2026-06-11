@@ -48,6 +48,7 @@ interface GameResultRealtimeRow {
   playerName: string;
   score: number;
   misses: number;
+  disqualified: boolean;
 }
 
 interface SwagOrderRealtimeRow {
@@ -68,7 +69,8 @@ function isGameResultRealtimeRow(
     typeof candidate.id === "string" &&
     typeof candidate.playerName === "string" &&
     typeof candidate.score === "number" &&
-    typeof candidate.misses === "number"
+    typeof candidate.misses === "number" &&
+    typeof candidate.disqualified === "boolean"
   );
 }
 
@@ -87,6 +89,10 @@ function isSwagOrderRealtimeRow(value: unknown): value is SwagOrderRealtimeRow {
 
 function toPlayerResult(value: unknown): PlayerResult | null {
   if (!isGameResultRealtimeRow(value)) {
+    return null;
+  }
+
+  if (value.disqualified) {
     return null;
   }
 
@@ -504,25 +510,16 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
     const syncRows = async () => {
       const { data, error } = await supabase
         .from("game_results")
-        .select("id, playerName, score, misses");
+        .select("id, playerName, score, misses, disqualified")
+        .eq("disqualified", false);
 
       if (error || !isMounted || !Array.isArray(data)) {
         return;
       }
 
       const realtimeRows: PlayerResult[] = data.flatMap((value) => {
-        if (!isGameResultRealtimeRow(value)) {
-          return [];
-        }
-
-        return [
-          {
-            id: value.id,
-            name: value.playerName,
-            hits: value.score,
-            misses: value.misses,
-          },
-        ];
+        const row = toPlayerResult(value);
+        return row ? [row] : [];
       });
 
       setRows(realtimeRows);
@@ -540,7 +537,20 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
         { event: "*", schema: "public", table: "game_results" },
         (payload) => {
           const nextRow = toPlayerResult(payload.new);
+
           if (!nextRow) {
+            // Row was disqualified or invalid — remove it if it was previously shown
+            const removedId =
+              payload.new &&
+              typeof payload.new === "object" &&
+              "id" in payload.new
+                ? (payload.new as { id: unknown }).id
+                : null;
+            if (typeof removedId === "string") {
+              setRows((currentRows) =>
+                currentRows.filter((r) => r.id !== removedId),
+              );
+            }
             return;
           }
 
@@ -764,7 +774,9 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
               </h1>
               <p className="mt-2 max-w-xl text-sm text-zinc-400 sm:text-base">
                 A clean snapshot of top whackers, accuracy, and who needs
-                another run.
+                another run. Have fun and play fair! While we appreciate a good
+                hacker mindset, scores obtained through exploits, automation, or
+                other unfair methods will be removed from the leaderboard.
               </p>
             </div>
           </div>
