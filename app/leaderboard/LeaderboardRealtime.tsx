@@ -87,12 +87,15 @@ function isSwagOrderRealtimeRow(value: unknown): value is SwagOrderRealtimeRow {
   );
 }
 
-function toPlayerResult(value: unknown): PlayerResult | null {
+function toPlayerResult(
+  value: unknown,
+  disqualifiedPlayers: Set<string>,
+): PlayerResult | null {
   if (!isGameResultRealtimeRow(value)) {
     return null;
   }
 
-  if (value.disqualified) {
+  if (value.disqualified || disqualifiedPlayers.has(value.playerName)) {
     return null;
   }
 
@@ -419,6 +422,7 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
   const [swagChannelReady, setSwagChannelReady] = useState(false);
   const swagChannelRef = useRef<RealtimeChannel | null>(null);
   const confettiRef = useRef<ConfettiLauncher | null>(null);
+  const disqualifiedPlayersRef = useRef<Set<string>>(new Set());
   const swagAnimationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -508,6 +512,21 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
     const swagOrdersChannel = supabase.channel(LEADERBOARD_SWAG_ORDERS_CHANNEL);
 
     const syncRows = async () => {
+      // Fetch disqualified players
+      const { data: disqualifiedData } = await supabase
+        .from("game_results")
+        .select("playerName")
+        .eq("disqualified", true);
+
+      if (Array.isArray(disqualifiedData)) {
+        const disqualifiedSet = new Set(
+          disqualifiedData
+            .map((row) => (row as { playerName: unknown }).playerName)
+            .filter((name): name is string => typeof name === "string"),
+        );
+        disqualifiedPlayersRef.current = disqualifiedSet;
+      }
+
       const { data, error } = await supabase
         .from("game_results")
         .select("id, playerName, score, misses, disqualified")
@@ -518,7 +537,7 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
       }
 
       const realtimeRows: PlayerResult[] = data.flatMap((value) => {
-        const row = toPlayerResult(value);
+        const row = toPlayerResult(value, disqualifiedPlayersRef.current);
         return row ? [row] : [];
       });
 
@@ -536,20 +555,33 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
         "postgres_changes",
         { event: "*", schema: "public", table: "game_results" },
         (payload) => {
-          const nextRow = toPlayerResult(payload.new);
+          const nextRow = toPlayerResult(
+            payload.new,
+            disqualifiedPlayersRef.current,
+          );
 
           if (!nextRow) {
-            // Row was disqualified or invalid — remove it if it was previously shown
-            const removedId =
+            // Check if this is a disqualification event
+            if (
               payload.new &&
               typeof payload.new === "object" &&
-              "id" in payload.new
-                ? (payload.new as { id: unknown }).id
-                : null;
-            if (typeof removedId === "string") {
-              setRows((currentRows) =>
-                currentRows.filter((r) => r.id !== removedId),
-              );
+              "playerName" in payload.new &&
+              "disqualified" in payload.new
+            ) {
+              const playerData = payload.new as {
+                playerName: unknown;
+                disqualified: unknown;
+              };
+              if (
+                typeof playerData.playerName === "string" &&
+                playerData.disqualified === true
+              ) {
+                disqualifiedPlayersRef.current.add(playerData.playerName);
+                // Remove all games for this disqualified player
+                setRows((currentRows) =>
+                  currentRows.filter((r) => r.name !== playerData.playerName),
+                );
+              }
             }
             return;
           }
