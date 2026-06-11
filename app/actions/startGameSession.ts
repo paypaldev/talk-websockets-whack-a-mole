@@ -1,6 +1,7 @@
 "use server";
 
 import { createHash, randomBytes } from "crypto";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { validatePlayerName } from "@/lib/playerName";
 import { getAntiCheatConfig } from "@/lib/antiCheatConfig";
@@ -18,6 +19,11 @@ function createSessionToken(): string {
   return randomBytes(32).toString("hex");
 }
 
+function isMobileUserAgent(ua: string | null): boolean {
+  if (!ua) return false;
+  return /Android|iPhone|iPad|iPod|Mobile|BlackBerry|Windows Phone/i.test(ua);
+}
+
 export async function startGameSessionAction(
   rawPlayerName: string,
 ): Promise<StartGameSessionResult> {
@@ -29,6 +35,14 @@ export async function startGameSessionAction(
       sessionId: "anti-cheat-disabled",
       sessionToken: "anti-cheat-disabled",
     };
+  }
+
+  if (antiCheatConfig.requireMobileDevice) {
+    const requestHeaders = await headers();
+    const ua = requestHeaders.get("user-agent");
+    if (!isMobileUserAgent(ua)) {
+      throw new Error("This game is only available on mobile devices.");
+    }
   }
 
   const sessionToken = createSessionToken();
