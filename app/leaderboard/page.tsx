@@ -8,8 +8,36 @@ interface LeaderboardRowRecord {
   misses: number;
 }
 
+interface DisqualifiedPlayerRecord {
+  playerName: string;
+}
+
 async function getLeaderboardRows(): Promise<PlayerResult[]> {
+  const disqualifiedPlayers = await prisma.gameResult.findMany({
+    where: {
+      disqualified: true,
+    },
+    select: {
+      playerName: true,
+    },
+    distinct: ["playerName"],
+  });
+
+  const disqualifiedPlayerNames = disqualifiedPlayers.map(
+    (result: DisqualifiedPlayerRecord) => result.playerName,
+  );
+
   const results = await prisma.gameResult.findMany({
+    where: {
+      disqualified: false,
+      ...(disqualifiedPlayerNames.length > 0
+        ? {
+            playerName: {
+              notIn: disqualifiedPlayerNames,
+            },
+          }
+        : {}),
+    },
     select: {
       id: true,
       playerName: true,
