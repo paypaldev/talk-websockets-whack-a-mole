@@ -29,7 +29,7 @@ export function GameRouteGate() {
 
   if (isMobile === false) {
     return (
-      <main className="relative flex flex-1 items-center justify-center overflow-hidden bg-[#0a0a0a] p-4 sm:p-6">
+      <main className="relative flex h-dvh w-full items-center justify-center overflow-hidden bg-[#0a0a0a] p-4 sm:p-6">
         {backgroundGradient}
         <div className="relative z-10 flex flex-col items-center gap-4 text-center">
           <p className="text-4xl">📱</p>
@@ -46,13 +46,13 @@ export function GameRouteGate() {
   return (
     <RequirePlayerName
       fallback={
-        <main className="relative flex flex-1 items-center justify-center overflow-hidden bg-[#0a0a0a] p-4 sm:p-6">
+        <main className="relative flex h-dvh w-full items-center justify-center overflow-hidden bg-[#0a0a0a] p-4 sm:p-6">
           {backgroundGradient}
         </main>
       }
     >
       {(playerName) => (
-        <main className="relative flex flex-1 items-center justify-center overflow-hidden bg-[#0a0a0a] p-4 sm:p-6">
+        <main className="relative flex h-dvh w-full items-center justify-center overflow-hidden bg-[#0a0a0a] p-4 sm:p-6">
           {backgroundGradient}
           <WhackAMole playerName={playerName} />
         </main>
