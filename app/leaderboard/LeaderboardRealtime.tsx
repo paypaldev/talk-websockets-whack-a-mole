@@ -721,7 +721,7 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
   const totalGamesPlayed = rows.length;
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#0a0a0a] px-4 py-10 text-zinc-100 sm:px-6 lg:px-8">
+    <main className="relative flex h-dvh flex-col overflow-hidden bg-[#0a0a0a] px-4 py-6 text-zinc-100 sm:px-6 lg:px-8">
       <ReactCanvasConfetti
         className="pointer-events-none fixed inset-0 z-40"
         style={{ width: "100vw", height: "100vh" }}
@@ -742,7 +742,7 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
 
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.2),transparent_40%),radial-gradient(circle_at_85%_15%,rgba(255,255,255,0.06),transparent_30%)]" />
 
-      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-8">
+      <div className="relative mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-6">
         <header className="space-y-4">
           {showHeaderButtons ? (
             <div className="flex items-start justify-between gap-3">
@@ -818,7 +818,7 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
           </div>
         </header>
 
-        <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-3 xl:grid-rows-[auto_1fr]">
+        <div className="grid min-h-0 w-full flex-1 grid-cols-1 gap-6 xl:grid-cols-3 xl:grid-rows-[auto_1fr]">
           <div className="xl:col-start-1 xl:row-start-1">
             <PlayersCard
               uniquePlayers={uniquePlayers}
@@ -840,7 +840,7 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
             </p>
           </div>
 
-          <div className="xl:col-start-1 xl:row-start-2">
+          <div className="min-h-0 xl:col-start-1 xl:row-start-2">
             <LeaderboardTable
               title="Top Hitters"
               subtitle="Top 10 scores today"
@@ -850,11 +850,11 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
             />
           </div>
 
-          <div className="xl:col-start-2 xl:row-start-2">
+          <div className="min-h-0 xl:col-start-2 xl:row-start-2">
             <ActivityTable rows={activityItems} />
           </div>
 
-          <section className="grid gap-6 xl:col-start-3 xl:row-start-1 xl:row-span-2">
+          <section className="grid min-h-0 gap-6 overflow-hidden xl:col-start-3 xl:row-start-1 xl:row-span-2">
             <article className="overflow-hidden rounded-2xl border border-cyan-300/35 bg-gradient-to-br from-cyan-500/20 via-sky-500/10 to-transparent p-4 sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">
