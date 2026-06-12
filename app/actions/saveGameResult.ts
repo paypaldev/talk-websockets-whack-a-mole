@@ -329,6 +329,14 @@ export async function saveGameResultAction(input: SaveGameResultInput) {
     return saveDisqualifiedAudit("No attempts submitted.");
   }
 
+  const bannedEntry = await prisma.disqualifiedName.findFirst({
+    where: { name: { equals: validated.playerName, mode: "insensitive" } },
+    select: { name: true },
+  });
+  if (bannedEntry) {
+    return saveDisqualifiedAudit("Player name is on the disqualification list.");
+  }
+
   // Timing check: moved out of validateInput so violations are saved, not thrown.
   const timingViolation = findImpossibleTimingViolation(
     validated.attempts,

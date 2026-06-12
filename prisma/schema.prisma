@@ -45,3 +45,13 @@ model GameSession {
     @@index([expiresAt])
     @@map("game_sessions")
 }
+
+model DisqualifiedName {
+    id        String   @id @default(cuid())
+    name      String   @db.VarChar(80)
+    reason    String?  @db.VarChar(200)
+    createdAt DateTime @default(now())
+
+    @@index([createdAt])
+    @@map("disqualified_names")
+}
