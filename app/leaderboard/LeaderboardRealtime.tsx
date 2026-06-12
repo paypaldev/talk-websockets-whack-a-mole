@@ -15,6 +15,7 @@ import {
   ACTIVITY_TOAST_CONFIG,
   type ActivityTone,
 } from "@/lib/activityToastConfig";
+import { formatDistanceToNow } from "date-fns";
 import {
   ACTIVE_GAMES_CHANNEL,
   GAME_RESULTS_LEADERBOARD_CHANNEL,
@@ -129,14 +130,6 @@ function isActiveGamePresence(value: unknown): value is ActiveGamePresence {
   return Boolean(value) && typeof value === "object";
 }
 
-function formatActivityTime(timestampMs: number): string {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  }).format(new Date(timestampMs));
-}
 
 function upsertPlayerResult(
   currentRows: PlayerResult[],
@@ -312,6 +305,12 @@ function LeaderboardTable({
 }
 
 function ActivityTable({ rows }: { rows: ActivityItem[] }) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <section className="flex h-full max-h-128 w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70 backdrop-blur-sm xl:max-h-none">
       <div className="shrink-0 border-b border-white/10 px-6 py-5">
@@ -355,7 +354,7 @@ function ActivityTable({ rows }: { rows: ActivityItem[] }) {
                 <span
                   className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${toneClass}`}
                 >
-                  {formatActivityTime(event.at)}
+                  {formatDistanceToNow(event.at, { addSuffix: true })}
                 </span>
               </div>
             );
