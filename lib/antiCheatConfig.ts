@@ -4,6 +4,7 @@ interface AntiCheatConfig {
   sessionTtlMs: number;
   requireMobileDevice: boolean;
   maxScorePerGame: number;
+  maxAttemptsPerGame: number;
   maxSessionsPerWindow: number;
   sessionRateLimitWindowMs: number;
   disqualifyZeroMisses: boolean;
@@ -15,6 +16,7 @@ const DEFAULT_SESSION_TTL_MS = 120_000;
 const DEFAULT_REQUIRE_MOBILE_DEVICE = true;
 // 2× the theoretical max score for a perfect script hitting every mole (126 pts)
 const DEFAULT_MAX_SCORE_PER_GAME = 300;
+const DEFAULT_MAX_ATTEMPTS_PER_GAME = 2_000;
 const DEFAULT_MAX_SESSIONS_PER_WINDOW = 5;
 const DEFAULT_SESSION_RATE_LIMIT_WINDOW_MS = 5 * 60 * 1_000; // 5 minutes
 const DEFAULT_DISQUALIFY_ZERO_MISSES = true;
@@ -76,6 +78,10 @@ export function getAntiCheatConfig(): AntiCheatConfig {
     maxScorePerGame: parsePositiveIntegerEnv(
       process.env.ANTI_CHEAT_MAX_SCORE_PER_GAME,
       DEFAULT_MAX_SCORE_PER_GAME,
+    ),
+    maxAttemptsPerGame: parsePositiveIntegerEnv(
+      process.env.ANTI_CHEAT_MAX_ATTEMPTS_PER_GAME,
+      DEFAULT_MAX_ATTEMPTS_PER_GAME,
     ),
     maxSessionsPerWindow: parsePositiveIntegerEnv(
       process.env.ANTI_CHEAT_MAX_SESSIONS_PER_WINDOW,

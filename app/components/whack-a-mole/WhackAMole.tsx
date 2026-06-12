@@ -34,6 +34,7 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
     activeMoles,
     startGame,
     whackMole,
+    getWhackAttempts,
   } = useGameEngine();
   const [showSwagStoreButton, setShowSwagStoreButton] = useState(false);
   const [scoreSubmissionErrorMessage, setScoreSubmissionErrorMessage] =
@@ -109,8 +110,7 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
           sessionId: activeGameSession.sessionId,
           sessionToken: activeGameSession.sessionToken,
           playerName: trimmedPlayerName,
-          score,
-          misses,
+          attempts: getWhackAttempts(),
         });
         setScoreSubmissionErrorMessage(null);
       } catch {
@@ -123,7 +123,7 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
     };
 
     void submitResult();
-  }, [gameState, misses, playerName, score]);
+  }, [gameState, getWhackAttempts, playerName]);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
