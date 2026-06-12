@@ -25,7 +25,7 @@ const DEFAULT_MIN_INTER_ATTEMPT_MS = 80;
 const DEFAULT_MAX_HITS_PER_SECOND_WINDOW = 6;
 const DEFAULT_MAX_SESSIONS_PER_WINDOW = 5;
 const DEFAULT_SESSION_RATE_LIMIT_WINDOW_MS = 5 * 60 * 1_000; // 5 minutes
-const DEFAULT_DISQUALIFY_ZERO_MISSES = true;
+const DEFAULT_DISQUALIFY_ZERO_MISSES = false;
 
 function parseBooleanEnv(
   rawValue: string | undefined,
