@@ -33,6 +33,11 @@ body {
   font-family: var(--font-geist-sans), sans-serif;
 }
 
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px 4px rgba(34, 211, 238, 0.2); }
+  50%       { box-shadow: 0 0 100px 30px rgba(34, 211, 238, 0.9), 0 0 40px 10px rgba(34, 211, 238, 0.6); }
+}
+
 @keyframes mole-leaderboard-pop {
   0%   { transform: translateY(100%) scaleX(1.3)  scaleY(0.3)  rotate(0deg); }
   20%  { transform: translateY(-25%) scaleX(0.85) scaleY(1.2)  rotate(0deg); }

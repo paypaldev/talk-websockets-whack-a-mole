@@ -76,17 +76,17 @@ export function PlayersCard({
   }, []);
 
   return (
-    <div className="rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3">
+    <div className="flex h-full flex-col rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3">
       <div className="flex items-start justify-between gap-3">
         <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">
           Players
         </p>
         <RealtimeBadge status={realtimeStatus} />
       </div>
-      <p className="mt-1 text-2xl font-semibold text-zinc-50">
+      <p className="mt-1 text-5xl font-semibold text-zinc-50">
         {uniquePlayers}
       </p>
-      <div className="mt-1 flex items-center justify-between gap-4 text-xs text-zinc-400">
+      <div className="mt-auto flex items-center justify-between gap-4 pt-3 text-sm text-zinc-400">
         <p>
           Total games played:{" "}
           <span className="font-semibold text-zinc-200 tabular-nums">

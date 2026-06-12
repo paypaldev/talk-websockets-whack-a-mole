@@ -107,9 +107,7 @@ function isSwagOrderRealtimeRow(value: unknown): value is SwagOrderRealtimeRow {
   );
 }
 
-function toPlayerResult(
-  value: unknown,
-): PlayerResult | null {
+function toPlayerResult(value: unknown): PlayerResult | null {
   if (!isGameResultRealtimeRow(value)) {
     return null;
   }
@@ -129,7 +127,6 @@ function toPlayerResult(
 function isActiveGamePresence(value: unknown): value is ActiveGamePresence {
   return Boolean(value) && typeof value === "object";
 }
-
 
 function upsertPlayerResult(
   currentRows: PlayerResult[],
@@ -281,7 +278,9 @@ function LeaderboardTable({
                 {gamesPlayedByPlayer && (
                   <span className="block truncate text-[11px] tabular-nums text-zinc-500">
                     {gamesPlayedByPlayer.get(player.name) ?? 1}
-                    {(gamesPlayedByPlayer.get(player.name) ?? 1) === 1 ? " game" : " games"}
+                    {(gamesPlayedByPlayer.get(player.name) ?? 1) === 1
+                      ? " game"
+                      : " games"}
                   </span>
                 )}
               </div>
@@ -534,21 +533,29 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
         supabase.from("disqualified_names").select("name"),
       ]);
 
-      if (resultsResponse.error || !isMounted || !Array.isArray(resultsResponse.data)) {
+      if (
+        resultsResponse.error ||
+        !isMounted ||
+        !Array.isArray(resultsResponse.data)
+      ) {
         return;
       }
 
       const bannedLower = new Set(
-        (bannedResponse.data ?? []).map((r: { name: string }) => r.name.toLowerCase()),
+        (bannedResponse.data ?? []).map((r: { name: string }) =>
+          r.name.toLowerCase(),
+        ),
       );
 
-      const realtimeRows: PlayerResult[] = resultsResponse.data.flatMap((value) => {
-        const row = toPlayerResult(value);
-        if (!row || bannedLower.has(row.name.toLowerCase())) {
-          return [];
-        }
-        return [row];
-      });
+      const realtimeRows: PlayerResult[] = resultsResponse.data.flatMap(
+        (value) => {
+          const row = toPlayerResult(value);
+          if (!row || bannedLower.has(row.name.toLowerCase())) {
+            return [];
+          }
+          return [row];
+        },
+      );
 
       setRows(realtimeRows);
     };
@@ -866,15 +873,23 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
             />
           </div>
 
-          <div className="rounded-xl border border-cyan-300/35 bg-cyan-400/10 px-4 py-3 xl:col-start-2 xl:row-start-1 xl:h-[122px] xl:overflow-hidden">
+          <div
+            className="rounded-xl border border-cyan-300/60 bg-cyan-400/15 px-4 py-3 ring-1 ring-cyan-300/20 xl:col-start-2 xl:row-start-1 xl:overflow-hidden"
+            style={{ animation: "glow-pulse 1.5s ease-in-out infinite" }}
+          >
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-200">
               iPad Air Prize
             </p>
-            <p className="mt-1 text-lg font-semibold text-cyan-100">
-              Giveaway at 4:00 PM today
+            <p className="mt-1 text-sm text-cyan-50/70">
+              Some scores were… surprisingly good. To keep things fun and fair,
+              we&apos;re settling this the old-fashioned way:
             </p>
-            <p className="mt-1 text-sm text-cyan-50/80">
-              Play now before the 4:00 PM draw.
+            <p className="mt-1.5 text-base font-bold uppercase tracking-wide text-cyan-100">
+              Live Whack-a-Mole Battle
+            </p>
+            <p className="mt-0.5 text-sm text-cyan-50/80">
+              Play <span className="font-semibold">LIVE at 4pm</span> at the
+              PayPal Booth — winner takes home the iPad
             </p>
           </div>
 
@@ -943,7 +958,10 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
       </div>
 
       {molePopKey > 0 && (
-        <div className="pointer-events-none fixed bottom-0 z-50 -translate-x-1/2" style={{ left: `${moleLeft}%` }}>
+        <div
+          className="pointer-events-none fixed bottom-0 z-50 -translate-x-1/2"
+          style={{ left: `${moleLeft}%` }}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             key={molePopKey}
