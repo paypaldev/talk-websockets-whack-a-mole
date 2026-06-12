@@ -220,12 +220,14 @@ function LeaderboardTable({
   rows,
   highlightColumn,
   realtimeStatus,
+  gamesPlayedByPlayer,
 }: {
   title: string;
   subtitle: string;
   rows: PlayerResult[];
   highlightColumn: "hits" | "misses";
   realtimeStatus: RealtimeStatus;
+  gamesPlayedByPlayer?: Map<string, number>;
 }) {
   return (
     <section className="h-full w-full overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70 backdrop-blur-sm">
@@ -270,11 +272,19 @@ function LeaderboardTable({
               <div className="flex items-center justify-center">
                 <RankBadge rank={i + 1} />
               </div>
-              <span
-                className={`truncate text-sm ${topThree ? "font-medium text-zinc-100" : "text-zinc-300"}`}
-              >
-                {player.name}
-              </span>
+              <div className="min-w-0">
+                <span
+                  className={`block truncate text-sm ${topThree ? "font-medium text-zinc-100" : "text-zinc-300"}`}
+                >
+                  {player.name}
+                </span>
+                {gamesPlayedByPlayer && (
+                  <span className="block truncate text-[11px] tabular-nums text-zinc-500">
+                    {gamesPlayedByPlayer.get(player.name) ?? 1}
+                    {(gamesPlayedByPlayer.get(player.name) ?? 1) === 1 ? " game" : " games"}
+                  </span>
+                )}
+              </div>
               <span
                 className={`text-right text-sm font-semibold tabular-nums ${
                   highlightColumn === "hits"
@@ -737,6 +747,10 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
     return getPlayerTotals(rows);
   }, [rows]);
 
+  const gamesPlayedByPlayer = useMemo(() => {
+    return new Map(playerTotals.map((p) => [p.name, p.gamesPlayed]));
+  }, [playerTotals]);
+
   const byHits = useMemo(() => {
     return bestScorePerPlayer(rows).sort((a, b) => b.hits - a.hits);
   }, [rows]);
@@ -871,6 +885,7 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
               rows={byHits.slice(0, 10)}
               highlightColumn="hits"
               realtimeStatus={realtimeStatus}
+              gamesPlayedByPlayer={gamesPlayedByPlayer}
             />
           </div>
 
