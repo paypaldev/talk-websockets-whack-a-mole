@@ -502,18 +502,28 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
     };
 
     const syncRows = async () => {
-      const { data, error } = await supabase
-        .from("game_results")
-        .select("id, playerName, score, misses, disqualified")
-        .eq("disqualified", false);
+      const [resultsResponse, bannedResponse] = await Promise.all([
+        supabase
+          .from("game_results")
+          .select("id, playerName, score, misses, disqualified")
+          .eq("disqualified", false),
+        supabase.from("disqualified_names").select("name"),
+      ]);
 
-      if (error || !isMounted || !Array.isArray(data)) {
+      if (resultsResponse.error || !isMounted || !Array.isArray(resultsResponse.data)) {
         return;
       }
 
-      const realtimeRows: PlayerResult[] = data.flatMap((value) => {
+      const bannedLower = new Set(
+        (bannedResponse.data ?? []).map((r: { name: string }) => r.name.toLowerCase()),
+      );
+
+      const realtimeRows: PlayerResult[] = resultsResponse.data.flatMap((value) => {
         const row = toPlayerResult(value);
-        return row ? [row] : [];
+        if (!row || bannedLower.has(row.name.toLowerCase())) {
+          return [];
+        }
+        return [row];
       });
 
       setRows(realtimeRows);
