@@ -23,7 +23,7 @@ export function SandboxTestCards() {
             <p className="font-semibold text-white">iPad Air</p>
             <p className="text-xs text-zinc-200/80">
               The top player at the end of the day wins this prize! You must be
-              at the PayPal booth to claim it at 5pm.
+              at the PayPal booth to claim it at 4pm.
             </p>
           </div>
 

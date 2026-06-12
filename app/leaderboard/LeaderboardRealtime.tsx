@@ -862,10 +862,10 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
               iPad Air Prize
             </p>
             <p className="mt-1 text-lg font-semibold text-cyan-100">
-              Giveaway at 5:00 PM today
+              Giveaway at 4:00 PM today
             </p>
             <p className="mt-1 text-sm text-cyan-50/80">
-              Play now before the 5:00 PM draw.
+              Play now before the 4:00 PM draw.
             </p>
           </div>
 
@@ -890,7 +890,7 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
                   Prize Spotlight
                 </p>
                 <span className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100">
-                  5:00 PM Today
+                  4:00 PM Today
                 </span>
               </div>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-cyan-50">

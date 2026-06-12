@@ -42,7 +42,7 @@ export function StartScreen({
         <span className="text-base leading-none">🎁</span>
         <p className="text-xs leading-snug text-amber-200/90">
           <span className="font-semibold">Win an iPad!</span> Highest score at
-          5pm takes it home! Come to the PayPal booth to claim. You must be
+          4pm takes it home! Come to the PayPal booth to claim. You must be
           present to win.
         </p>
       </div>
