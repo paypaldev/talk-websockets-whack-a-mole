@@ -4,6 +4,9 @@ interface AntiCheatConfig {
   sessionTtlMs: number;
   requireMobileDevice: boolean;
   maxScorePerGame: number;
+  maxAttemptsPerGame: number;
+  minInterAttemptMs: number;
+  maxHitsPerSecondWindow: number;
   maxSessionsPerWindow: number;
   sessionRateLimitWindowMs: number;
   disqualifyZeroMisses: boolean;
@@ -15,6 +18,11 @@ const DEFAULT_SESSION_TTL_MS = 120_000;
 const DEFAULT_REQUIRE_MOBILE_DEVICE = true;
 // 2× the theoretical max score for a perfect script hitting every mole (126 pts)
 const DEFAULT_MAX_SCORE_PER_GAME = 300;
+const DEFAULT_MAX_ATTEMPTS_PER_GAME = 2_000;
+// Below the fastest documented human reaction time (~100ms) with margin.
+const DEFAULT_MIN_INTER_ATTEMPT_MS = 80;
+// More than 6 hits per second exceeds what any human can sustain.
+const DEFAULT_MAX_HITS_PER_SECOND_WINDOW = 6;
 const DEFAULT_MAX_SESSIONS_PER_WINDOW = 5;
 const DEFAULT_SESSION_RATE_LIMIT_WINDOW_MS = 5 * 60 * 1_000; // 5 minutes
 const DEFAULT_DISQUALIFY_ZERO_MISSES = true;
@@ -76,6 +84,18 @@ export function getAntiCheatConfig(): AntiCheatConfig {
     maxScorePerGame: parsePositiveIntegerEnv(
       process.env.ANTI_CHEAT_MAX_SCORE_PER_GAME,
       DEFAULT_MAX_SCORE_PER_GAME,
+    ),
+    maxAttemptsPerGame: parsePositiveIntegerEnv(
+      process.env.ANTI_CHEAT_MAX_ATTEMPTS_PER_GAME,
+      DEFAULT_MAX_ATTEMPTS_PER_GAME,
+    ),
+    minInterAttemptMs: parsePositiveIntegerEnv(
+      process.env.ANTI_CHEAT_MIN_INTER_ATTEMPT_MS,
+      DEFAULT_MIN_INTER_ATTEMPT_MS,
+    ),
+    maxHitsPerSecondWindow: parsePositiveIntegerEnv(
+      process.env.ANTI_CHEAT_MAX_HITS_PER_SECOND_WINDOW,
+      DEFAULT_MAX_HITS_PER_SECOND_WINDOW,
     ),
     maxSessionsPerWindow: parsePositiveIntegerEnv(
       process.env.ANTI_CHEAT_MAX_SESSIONS_PER_WINDOW,

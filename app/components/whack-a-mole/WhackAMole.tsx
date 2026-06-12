@@ -25,6 +25,14 @@ interface ActiveGameSession {
   sessionToken: string;
 }
 
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  return "Unable to verify game session right now.";
+}
+
 export function WhackAMole({ playerName }: WhackAMoleProps) {
   const {
     gameState,
@@ -34,16 +42,21 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
     activeMoles,
     startGame,
     whackMole,
+    getWhackAttempts,
   } = useGameEngine();
   const [showSwagStoreButton, setShowSwagStoreButton] = useState(false);
   const [scoreSubmissionErrorMessage, setScoreSubmissionErrorMessage] =
     useState<string | null>(null);
+  const [sessionSetupErrorMessage, setSessionSetupErrorMessage] = useState<
+    string | null
+  >(null);
   const activeGameSessionRef = useRef<ActiveGameSession | null>(null);
   const previousGameStateRef = useRef(gameState);
   const realtimeSessionIdRef = useRef<string | null>(null);
 
   const handleStartGame = () => {
     setScoreSubmissionErrorMessage(null);
+    setSessionSetupErrorMessage(null);
     startGame();
   };
 
@@ -67,10 +80,15 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
         const session = await startGameSessionAction(trimmedPlayerName);
         if (!isCancelled) {
           activeGameSessionRef.current = session;
+          setSessionSetupErrorMessage(null);
         }
-      } catch {
+      } catch (error) {
         if (!isCancelled) {
           activeGameSessionRef.current = null;
+          const reason = toErrorMessage(error);
+          setSessionSetupErrorMessage(
+            `Practice mode: ${reason} Scores from this round will not be submitted.`,
+          );
         }
       }
     };
@@ -92,7 +110,14 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
 
     const trimmedPlayerName = playerName?.trim();
     const activeGameSession = activeGameSessionRef.current;
-    if (!trimmedPlayerName || !activeGameSession) {
+    if (!trimmedPlayerName) {
+      return;
+    }
+
+    if (!activeGameSession) {
+      if (sessionSetupErrorMessage) {
+        setScoreSubmissionErrorMessage(sessionSetupErrorMessage);
+      }
       return;
     }
 
@@ -109,8 +134,7 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
           sessionId: activeGameSession.sessionId,
           sessionToken: activeGameSession.sessionToken,
           playerName: trimmedPlayerName,
-          score,
-          misses,
+          attempts: getWhackAttempts(),
         });
         setScoreSubmissionErrorMessage(null);
       } catch {
@@ -123,7 +147,7 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
     };
 
     void submitResult();
-  }, [gameState, misses, playerName, score]);
+  }, [gameState, getWhackAttempts, playerName, sessionSetupErrorMessage]);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -221,6 +245,14 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
       {gameState === "playing" && (
         <>
           <GameStats score={score} timeRemaining={timeRemaining} />
+          {sessionSetupErrorMessage ? (
+            <p
+              className="mx-4 mb-3 rounded-lg border border-amber-300/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-100"
+              role="status"
+            >
+              {sessionSetupErrorMessage}
+            </p>
+          ) : null}
           <GameBoard activeMoles={activeMoles} onWhack={whackMole} />
         </>
       )}

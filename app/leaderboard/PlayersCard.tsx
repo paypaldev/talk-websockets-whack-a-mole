@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import {
-  ACTIVE_GAMES_CHANNEL,
   GAME_RESULTS_CHANNEL,
   getSupabaseBrowserClient,
 } from "@/lib/supabaseBrowser";
@@ -11,15 +10,16 @@ import { RealtimeBadge, type RealtimeStatus } from "./RealtimeBadge";
 interface PlayersCardProps {
   uniquePlayers: number;
   totalGamesPlayed: number;
+  activeGames: number;
   realtimeStatus: RealtimeStatus;
 }
 
 export function PlayersCard({
   uniquePlayers,
   totalGamesPlayed,
+  activeGames,
   realtimeStatus,
 }: PlayersCardProps) {
-  const [activeGames, setActiveGames] = useState(0);
   const [totalGamesPlayedCount, setTotalGamesPlayedCount] =
     useState(totalGamesPlayed);
 
@@ -35,19 +35,7 @@ export function PlayersCard({
 
     let isMounted = true;
 
-    const activeGamesChannel = supabase.channel(ACTIVE_GAMES_CHANNEL);
     const gamesCountChannel = supabase.channel(GAME_RESULTS_CHANNEL);
-
-    const syncActiveGames = () => {
-      const presenceState = activeGamesChannel.presenceState();
-      const gameCount = Object.values(presenceState).reduce(
-        (total, sessions) => {
-          return total + sessions.length;
-        },
-        0,
-      );
-      setActiveGames(gameCount);
-    };
 
     const syncTotalGamesPlayed = async () => {
       const { count, error } = await supabase
@@ -60,16 +48,6 @@ export function PlayersCard({
 
       setTotalGamesPlayedCount(count);
     };
-
-    activeGamesChannel
-      .on("presence", { event: "sync" }, () => {
-        syncActiveGames();
-      })
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          syncActiveGames();
-        }
-      });
 
     const statusesToResync = [
       "SUBSCRIBED",
@@ -93,7 +71,6 @@ export function PlayersCard({
 
     return () => {
       isMounted = false;
-      void activeGamesChannel.unsubscribe();
       void gamesCountChannel.unsubscribe();
     };
   }, []);

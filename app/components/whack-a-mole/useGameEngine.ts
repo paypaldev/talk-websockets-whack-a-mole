@@ -52,6 +52,13 @@ export const DIFFICULTY_PHASES: readonly DifficultyPhaseConfig[] = [
 
 export type GameState = "idle" | "playing" | "ended";
 export type MoleType = "mole" | "paypal";
+export type WhackAttemptOutcome = "hit_mole" | "hit_paypal" | "miss";
+
+export interface WhackAttempt {
+  holeIndex: number;
+  occurredAtMs: number;
+  outcome: WhackAttemptOutcome;
+}
 
 export interface GameEngineReturn {
   gameState: GameState;
@@ -61,6 +68,7 @@ export interface GameEngineReturn {
   activeMoles: Map<number, MoleType>;
   startGame: () => void;
   whackMole: (index: number) => void;
+  getWhackAttempts: () => WhackAttempt[];
 }
 
 function lerp(a: number, b: number, t: number): number {
@@ -117,6 +125,7 @@ export function useGameEngine(): GameEngineReturn {
   const activeMolesRef = useRef<Map<number, MoleType>>(new Map());
   const startTimeRef = useRef<number>(0);
   const paypalSpawnedRef = useRef<number>(0);
+  const whackAttemptsRef = useRef<WhackAttempt[]>([]);
 
   // Countdown timer
   useEffect(() => {
@@ -231,16 +240,31 @@ export function useGameEngine(): GameEngineReturn {
     setTimeRemaining(GAME_DURATION);
     setActiveMoles(new Map());
     activeMolesRef.current = new Map();
+    startTimeRef.current = Date.now();
     paypalSpawnedRef.current = 0;
+    whackAttemptsRef.current = [];
     setGameState("playing");
   }, []);
 
   const whackMole = useCallback((index: number) => {
+    const occurredAtMs = Math.max(0, Date.now() - startTimeRef.current);
     const type = activeMolesRef.current.get(index);
     if (type === undefined) {
+      whackAttemptsRef.current.push({
+        holeIndex: index,
+        occurredAtMs,
+        outcome: "miss",
+      });
       setMisses((prev) => prev + 1);
       return;
     }
+
+    whackAttemptsRef.current.push({
+      holeIndex: index,
+      occurredAtMs,
+      outcome: type === "paypal" ? "hit_paypal" : "hit_mole",
+    });
+
     setActiveMoles((prev) => {
       const next = new Map(prev);
       next.delete(index);
@@ -248,6 +272,10 @@ export function useGameEngine(): GameEngineReturn {
       return next;
     });
     setScore((prev) => prev + (type === "paypal" ? PAYPAL_BONUS_POINTS : 1));
+  }, []);
+
+  const getWhackAttempts = useCallback(() => {
+    return whackAttemptsRef.current.map((attempt) => ({ ...attempt }));
   }, []);
 
   return {
@@ -258,5 +286,6 @@ export function useGameEngine(): GameEngineReturn {
     activeMoles,
     startGame,
     whackMole,
+    getWhackAttempts,
   };
 }
