@@ -2,6 +2,8 @@
 
 This app persists completed game results using Prisma ORM backed by Supabase Postgres.
 
+![Leaderboard screenshot](https://github.com/user-attachments/assets/9373b0cf-ad74-4a21-8eec-92d4700b21b3)
+
 ## Prerequisites
 
 - [Docker](https://www.docker.com/) must be installed and running (required for local Supabase)
