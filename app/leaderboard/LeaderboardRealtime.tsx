@@ -158,6 +158,17 @@ function ratio(hits: number, misses: number): string {
   return `${Math.round((hits / total) * 100)}%`;
 }
 
+function bestScorePerPlayer(rows: PlayerResult[]): PlayerResult[] {
+  const best = new Map<string, PlayerResult>();
+  for (const row of rows) {
+    const existing = best.get(row.name);
+    if (!existing || row.hits > existing.hits) {
+      best.set(row.name, row);
+    }
+  }
+  return [...best.values()];
+}
+
 function getPlayerTotals(rows: PlayerResult[]): PlayerTotals[] {
   const totalsByPlayer = new Map<string, PlayerTotals>();
 
@@ -714,7 +725,7 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
   }, [rows]);
 
   const byHits = useMemo(() => {
-    return [...rows].sort((a, b) => b.hits - a.hits);
+    return bestScorePerPlayer(rows).sort((a, b) => b.hits - a.hits);
   }, [rows]);
 
   const uniquePlayers = playerTotals.length;
