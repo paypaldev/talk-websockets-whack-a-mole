@@ -130,13 +130,19 @@ export function WhackAMole({ playerName }: WhackAMoleProps) {
       }
 
       try {
-        await saveGameResultAction({
+        const result = await saveGameResultAction({
           sessionId: activeGameSession.sessionId,
           sessionToken: activeGameSession.sessionToken,
           playerName: trimmedPlayerName,
           attempts: getWhackAttempts(),
         });
-        setScoreSubmissionErrorMessage(null);
+        if (result.disqualified) {
+          setScoreSubmissionErrorMessage(
+            "Your score was flagged and won't appear on the leaderboard. Please speak to a booth attendant if you think this is a mistake.",
+          );
+        } else {
+          setScoreSubmissionErrorMessage(null);
+        }
       } catch {
         setScoreSubmissionErrorMessage(
           "Your score could not be submitted. Please press Play Again and try once more.",
