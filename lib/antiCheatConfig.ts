@@ -19,8 +19,9 @@ const DEFAULT_REQUIRE_MOBILE_DEVICE = true;
 // 2× the theoretical max score for a perfect script hitting every mole (126 pts)
 const DEFAULT_MAX_SCORE_PER_GAME = 300;
 const DEFAULT_MAX_ATTEMPTS_PER_GAME = 2_000;
-// Below the fastest documented human reaction time (~100ms) with margin.
-const DEFAULT_MIN_INTER_ATTEMPT_MS = 80;
+// Below the fastest documented human reaction time (~100ms); 50ms allows for
+// touch event timing variance on mobile while still blocking bot-speed inputs.
+const DEFAULT_MIN_INTER_ATTEMPT_MS = 50;
 // More than 6 hits per second exceeds what any human can sustain.
 const DEFAULT_MAX_HITS_PER_SECOND_WINDOW = 6;
 const DEFAULT_MAX_SESSIONS_PER_WINDOW = 5;
