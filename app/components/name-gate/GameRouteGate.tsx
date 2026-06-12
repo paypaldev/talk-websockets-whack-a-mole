@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, startTransition } from "react";
 import { WhackAMole } from "../whack-a-mole/WhackAMole";
 import { RequirePlayerName } from "./RequirePlayerName";
 
@@ -19,7 +19,12 @@ export function GameRouteGate() {
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
 
   useEffect(() => {
-    setIsMobile(detectMobile());
+    // detectMobile reads navigator which is only available in the browser, so
+    // this must run in an effect rather than during render.
+    const result = detectMobile();
+    startTransition(() => {
+      setIsMobile(result);
+    });
   }, []);
 
   if (isMobile === false) {

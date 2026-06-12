@@ -8,6 +8,9 @@ import { getAntiCheatConfig } from "@/lib/antiCheatConfig";
 
 const HOLE_COUNT = 9;
 const PAYPAL_BONUS_POINTS = 10;
+// Game is 60 s; allow 2 s of clock drift/network latency before rejecting.
+const GAME_DURATION_MS = 60_000;
+const CLOCK_DRIFT_BUFFER_MS = 2_000;
 
 type WhackAttemptOutcome = "hit_mole" | "hit_paypal" | "miss";
 
@@ -102,11 +105,101 @@ function computeAuthoritativeResult(
   };
 }
 
+/**
+ * Hard-reject impossible timing patterns that cannot occur with real input.
+ * Returns a human-unreadable rejection reason on failure, null on pass.
+ */
+function findImpossibleTimingViolation(
+  attempts: readonly WhackAttemptInput[],
+  minInterAttemptMs: number,
+): string | null {
+  const maxTimestamp = GAME_DURATION_MS + CLOCK_DRIFT_BUFFER_MS;
+
+  for (let i = 0; i < attempts.length; i += 1) {
+    if (attempts[i].occurredAtMs > maxTimestamp) {
+      return "attempt timestamp exceeds game duration.";
+    }
+  }
+
+  for (let i = 1; i < attempts.length; i += 1) {
+    const gap = attempts[i].occurredAtMs - attempts[i - 1].occurredAtMs;
+    if (gap < minInterAttemptMs) {
+      return "consecutive attempts are too fast to be human input.";
+    }
+  }
+
+  return null;
+}
+
+interface SuspiciousPatternResult {
+  disqualify: boolean;
+  reasons: string[];
+}
+
+/**
+ * Detect behavioural patterns associated with automation.
+ * Returns disqualify=true when the session should be flagged rather than
+ * hard-rejected, so legitimate edge cases are preserved for manual review.
+ */
+function detectSuspiciousPatterns(
+  attempts: readonly WhackAttemptInput[],
+  maxHitsPerSecondWindow: number,
+): SuspiciousPatternResult {
+  const reasons: string[] = [];
+
+  // --- Burst detection (sliding window) ---
+  const hits = attempts.filter(
+    (a) => a.outcome === "hit_mole" || a.outcome === "hit_paypal",
+  );
+
+  let windowStart = 0;
+  for (let i = 0; i < hits.length; i += 1) {
+    while (hits[i].occurredAtMs - hits[windowStart].occurredAtMs > 1_000) {
+      windowStart += 1;
+    }
+    const hitsInWindow = i - windowStart + 1;
+    if (hitsInWindow > maxHitsPerSecondWindow) {
+      reasons.push(
+        `${hitsInWindow} hits recorded within a single second.`,
+      );
+      break;
+    }
+  }
+
+  // --- Regularity detection ---
+  // A bot clicking at fixed intervals produces near-zero variance in gaps.
+  // Only meaningful with enough data points.
+  if (attempts.length > 10) {
+    const gaps: number[] = [];
+    for (let i = 1; i < attempts.length; i += 1) {
+      gaps.push(attempts[i].occurredAtMs - attempts[i - 1].occurredAtMs);
+    }
+    const mean = gaps.reduce((sum, g) => sum + g, 0) / gaps.length;
+    const variance =
+      gaps.reduce((sum, g) => sum + Math.pow(g - mean, 2), 0) / gaps.length;
+    const stdDev = Math.sqrt(variance);
+    const coefficientOfVariation = mean > 0 ? stdDev / mean : 0;
+
+    // CV < 0.05 with a fast mean cadence is a strong bot signal.
+    if (coefficientOfVariation < 0.05 && mean < 500) {
+      reasons.push(
+        "click timing is suspiciously regular (possible automation).",
+      );
+    }
+  }
+
+  return {
+    disqualify: reasons.length > 0,
+    reasons,
+  };
+}
+
 function validateInput(
   input: SaveGameResultInput,
   antiCheatEnabled: boolean,
   maxScorePerGame: number,
   maxAttemptsPerGame: number,
+  minInterAttemptMs: number,
 ): ValidatedSaveGameResultInput {
   const sessionId = input.sessionId?.trim() ?? "";
   const sessionToken = input.sessionToken?.trim() ?? "";
@@ -132,6 +225,14 @@ function validateInput(
     if (attempts[i].occurredAtMs < attempts[i - 1].occurredAtMs) {
       throw new Error("attempts must be sorted by occurredAtMs.");
     }
+  }
+
+  const timingViolation = findImpossibleTimingViolation(
+    attempts,
+    minInterAttemptMs,
+  );
+  if (timingViolation) {
+    throw new Error(`Invalid game data: ${timingViolation}`);
   }
 
   if (antiCheatEnabled) {
@@ -192,16 +293,23 @@ export async function saveGameResultAction(input: SaveGameResultInput) {
     antiCheatConfig.enabled,
     antiCheatConfig.maxScorePerGame,
     antiCheatConfig.maxAttemptsPerGame,
+    antiCheatConfig.minInterAttemptMs,
   );
   const authoritativeResult = computeAuthoritativeResult(
     validated.attempts,
     antiCheatConfig.maxScorePerGame,
   );
 
+  const { disqualify: behavioralFlag } = detectSuspiciousPatterns(
+    validated.attempts,
+    antiCheatConfig.maxHitsPerSecondWindow,
+  );
+
   const autoDisqualified =
-    antiCheatConfig.disqualifyZeroMisses &&
-    authoritativeResult.misses === 0 &&
-    authoritativeResult.score > 0;
+    behavioralFlag ||
+    (antiCheatConfig.disqualifyZeroMisses &&
+      authoritativeResult.misses === 0 &&
+      authoritativeResult.score > 0);
 
   if (!antiCheatConfig.enabled) {
     const createdResult = await prisma.gameResult.create({
