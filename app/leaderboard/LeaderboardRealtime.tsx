@@ -302,8 +302,8 @@ function LeaderboardTable({
 
 function ActivityTable({ rows }: { rows: ActivityItem[] }) {
   return (
-    <section className="h-full w-full overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70 backdrop-blur-sm">
-      <div className="border-b border-white/10 px-6 py-5">
+    <section className="flex h-full max-h-128 w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70 backdrop-blur-sm xl:max-h-none">
+      <div className="shrink-0 border-b border-white/10 px-6 py-5">
         <h2 className="text-lg font-semibold tracking-tight text-zinc-50">
           Live Activity
         </h2>
@@ -317,7 +317,7 @@ function ActivityTable({ rows }: { rows: ActivityItem[] }) {
           Waiting for players to start.
         </div>
       ) : (
-        <div className="divide-y divide-white/5 bg-zinc-950/50">
+        <div className="min-h-0 flex-1 divide-y divide-white/5 overflow-y-auto bg-zinc-950/50">
           {rows.map((event) => {
             const toneClass =
               event.tone === "emerald"
