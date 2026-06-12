@@ -374,6 +374,8 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
     const params = new URLSearchParams(window.location.search);
     return params.get("buttons") === "true";
   });
+  const [molePopKey, setMolePopKey] = useState(0);
+  const [moleLeft, setMoleLeft] = useState(50);
   const [rows, setRows] = useState<PlayerResult[]>(initialRows);
   const [realtimeStatus, setRealtimeStatus] =
     useState<RealtimeStatus>("connecting");
@@ -493,6 +495,8 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
     };
 
     const pushActivity = (item: Omit<ActivityItem, "id" | "at">) => {
+      setMoleLeft(10 + Math.random() * 80);
+      setMolePopKey((k) => k + 1);
       const toastConfig = ACTIVITY_TOAST_CONFIG[item.tone];
       toast(item.title, {
         description: item.detail,
@@ -922,6 +926,23 @@ export function LeaderboardRealtime({ initialRows }: LeaderboardRealtimeProps) {
           </section>
         </div>
       </div>
+
+      {molePopKey > 0 && (
+        <div className="pointer-events-none fixed bottom-0 z-50 -translate-x-1/2" style={{ left: `${moleLeft}%` }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            key={molePopKey}
+            src="/mole.png"
+            alt=""
+            width={128}
+            style={{
+              display: "block",
+              animation: "mole-leaderboard-pop 3s linear forwards",
+              transformOrigin: "bottom center",
+            }}
+          />
+        </div>
+      )}
     </main>
   );
 }
