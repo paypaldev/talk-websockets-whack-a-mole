@@ -107,7 +107,7 @@ function computeAuthoritativeResult(
 
 /**
  * Hard-reject impossible timing patterns that cannot occur with real input.
- * Returns a human-unreadable rejection reason on failure, null on pass.
+ * Returns a rejection reason string on failure, null on pass.
  */
 function findImpossibleTimingViolation(
   attempts: readonly WhackAttemptInput[],
@@ -117,14 +117,14 @@ function findImpossibleTimingViolation(
 
   for (let i = 0; i < attempts.length; i += 1) {
     if (attempts[i].occurredAtMs > maxTimestamp) {
-      return "attempt timestamp exceeds game duration.";
+      return `attempt timestamp ${attempts[i].occurredAtMs}ms exceeds game duration ${maxTimestamp}ms.`;
     }
   }
 
   for (let i = 1; i < attempts.length; i += 1) {
     const gap = attempts[i].occurredAtMs - attempts[i - 1].occurredAtMs;
     if (gap < minInterAttemptMs) {
-      return "consecutive attempts are too fast to be human input.";
+      return `consecutive attempts ${gap}ms apart are too fast to be human input (minimum ${minInterAttemptMs}ms).`;
     }
   }
 
@@ -194,12 +194,14 @@ function detectSuspiciousPatterns(
   };
 }
 
+// Validates only structural correctness — data types, array shape, sort order.
+// Game-level checks (timing, session) are handled in saveGameResultAction so
+// they can be saved as disqualified records instead of throwing.
 function validateInput(
   input: SaveGameResultInput,
   antiCheatEnabled: boolean,
   maxScorePerGame: number,
   maxAttemptsPerGame: number,
-  minInterAttemptMs: number,
 ): ValidatedSaveGameResultInput {
   const sessionId = input.sessionId?.trim() ?? "";
   const sessionToken = input.sessionToken?.trim() ?? "";
@@ -207,10 +209,6 @@ function validateInput(
 
   if (!Array.isArray(input.attempts)) {
     throw new Error("attempts must be an array.");
-  }
-
-  if (input.attempts.length === 0) {
-    throw new Error("attempts cannot be empty.");
   }
 
   if (input.attempts.length > maxAttemptsPerGame) {
@@ -225,14 +223,6 @@ function validateInput(
     if (attempts[i].occurredAtMs < attempts[i - 1].occurredAtMs) {
       throw new Error("attempts must be sorted by occurredAtMs.");
     }
-  }
-
-  const timingViolation = findImpossibleTimingViolation(
-    attempts,
-    minInterAttemptMs,
-  );
-  if (timingViolation) {
-    throw new Error(`Invalid game data: ${timingViolation}`);
   }
 
   if (antiCheatEnabled) {
@@ -293,23 +283,65 @@ export async function saveGameResultAction(input: SaveGameResultInput) {
     antiCheatConfig.enabled,
     antiCheatConfig.maxScorePerGame,
     antiCheatConfig.maxAttemptsPerGame,
-    antiCheatConfig.minInterAttemptMs,
   );
   const authoritativeResult = computeAuthoritativeResult(
     validated.attempts,
     antiCheatConfig.maxScorePerGame,
   );
 
-  const { disqualify: behavioralFlag } = detectSuspiciousPatterns(
+  const { reasons: behavioralReasons } = detectSuspiciousPatterns(
     validated.attempts,
     antiCheatConfig.maxHitsPerSecondWindow,
   );
 
-  const autoDisqualified =
-    behavioralFlag ||
-    (antiCheatConfig.disqualifyZeroMisses &&
-      authoritativeResult.misses === 0 &&
-      authoritativeResult.score > 0);
+  const disqualificationReasons: string[] = [...behavioralReasons];
+
+  if (
+    antiCheatConfig.disqualifyZeroMisses &&
+    authoritativeResult.misses === 0 &&
+    authoritativeResult.score > 0
+  ) {
+    disqualificationReasons.push("zero misses with non-zero score.");
+  }
+
+  // Defined early so timing and session checks below can use it.
+  const saveDisqualifiedAudit = async (reason: string) => {
+    const allReasons = [...disqualificationReasons, reason];
+    const result = await prisma.gameResult.create({
+      data: {
+        playerName: validated.playerName,
+        score: authoritativeResult.score,
+        misses: authoritativeResult.misses,
+        disqualified: true,
+        disqualificationReason: allReasons.join(" "),
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        disqualified: true,
+      },
+    });
+    revalidatePath("/leaderboard");
+    return result;
+  };
+
+  if (validated.attempts.length === 0) {
+    return saveDisqualifiedAudit("No attempts submitted.");
+  }
+
+  // Timing check: moved out of validateInput so violations are saved, not thrown.
+  const timingViolation = findImpossibleTimingViolation(
+    validated.attempts,
+    antiCheatConfig.minInterAttemptMs,
+  );
+  if (timingViolation) {
+    return saveDisqualifiedAudit(timingViolation);
+  }
+
+  const autoDisqualified = disqualificationReasons.length > 0;
+  const disqualificationReason = autoDisqualified
+    ? disqualificationReasons.join(" ")
+    : null;
 
   if (!antiCheatConfig.enabled) {
     const createdResult = await prisma.gameResult.create({
@@ -318,10 +350,12 @@ export async function saveGameResultAction(input: SaveGameResultInput) {
         score: authoritativeResult.score,
         misses: authoritativeResult.misses,
         disqualified: autoDisqualified,
+        disqualificationReason,
       },
       select: {
         id: true,
         createdAt: true,
+        disqualified: true,
       },
     });
 
@@ -331,7 +365,7 @@ export async function saveGameResultAction(input: SaveGameResultInput) {
   }
 
   if (!validated.sessionId || !validated.sessionToken) {
-    throw new Error("Game session is required.");
+    return saveDisqualifiedAudit("Session ID or token missing.");
   }
 
   const session = await prisma.gameSession.findUnique({
@@ -349,62 +383,73 @@ export async function saveGameResultAction(input: SaveGameResultInput) {
   });
 
   if (!session) {
-    throw new Error("Invalid game session.");
+    return saveDisqualifiedAudit("Game session not found.");
   }
 
   if (session.playerName !== validated.playerName) {
-    throw new Error("Game session does not match player.");
+    return saveDisqualifiedAudit("Game session does not match player name.");
   }
 
   if (session.consumedAt) {
-    throw new Error("Game session already used.");
+    return saveDisqualifiedAudit("Game session already used.");
   }
 
   const now = new Date();
   if (session.expiresAt <= now) {
-    throw new Error("Game session expired.");
+    return saveDisqualifiedAudit("Game session expired.");
   }
 
   const elapsedMs = now.getTime() - session.createdAt.getTime();
   if (elapsedMs < antiCheatConfig.minGameDurationMs) {
-    throw new Error("Game session finished too quickly.");
+    return saveDisqualifiedAudit(
+      `Game finished too quickly (${elapsedMs}ms elapsed, minimum ${antiCheatConfig.minGameDurationMs}ms required).`,
+    );
   }
 
   const providedTokenHash = hashSessionToken(validated.sessionToken);
   if (!areHashesEqual(session.sessionTokenHash, providedTokenHash)) {
-    throw new Error("Invalid game session token.");
+    return saveDisqualifiedAudit("Session token hash mismatch.");
   }
 
-  const createdResult = await prisma.$transaction(async (transaction) => {
-    const consumedSession = await transaction.gameSession.updateMany({
-      where: {
-        id: session.id,
-        consumedAt: null,
-      },
-      data: {
-        consumedAt: now,
-      },
+  try {
+    const createdResult = await prisma.$transaction(async (transaction) => {
+      const consumedSession = await transaction.gameSession.updateMany({
+        where: {
+          id: session.id,
+          consumedAt: null,
+        },
+        data: {
+          consumedAt: now,
+        },
+      });
+
+      if (consumedSession.count !== 1) {
+        throw new Error("CONCURRENT_CONSUMED");
+      }
+
+      return transaction.gameResult.create({
+        data: {
+          playerName: validated.playerName,
+          score: authoritativeResult.score,
+          misses: authoritativeResult.misses,
+          disqualified: autoDisqualified,
+          disqualificationReason,
+        },
+        select: {
+          id: true,
+          createdAt: true,
+          disqualified: true,
+        },
+      });
     });
 
-    if (consumedSession.count !== 1) {
-      throw new Error("Game session already used.");
+    revalidatePath("/leaderboard");
+
+    return createdResult;
+  } catch (error) {
+    if (error instanceof Error && error.message === "CONCURRENT_CONSUMED") {
+      return saveDisqualifiedAudit("Game session consumed by a concurrent request.");
     }
-
-    return transaction.gameResult.create({
-      data: {
-        playerName: validated.playerName,
-        score: authoritativeResult.score,
-        misses: authoritativeResult.misses,
-        disqualified: autoDisqualified,
-      },
-      select: {
-        id: true,
-        createdAt: true,
-      },
-    });
-  });
-
-  revalidatePath("/leaderboard");
-
-  return createdResult;
+    throw error;
+  }
 }
